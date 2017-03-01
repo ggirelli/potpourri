@@ -8,3 +8,5 @@ Since I needed it for both back-end and front-end of a Python Bottle-based webse
 Both functions are, as those they are based on, quite straightforward and can be easily customized to get the output in RGB format.
 
 Cheers!
+
+└[∵┌]└[ ∵ ]┘[┐∵]┘

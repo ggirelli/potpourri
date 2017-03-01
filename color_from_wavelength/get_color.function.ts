@@ -28,6 +28,9 @@ let get_color = function(lambda:number):string {
 		},
 		int2hex:(color:number):string => {
 			let scolor:string = color.toString(16).toUpperCase();
+			while (2 > scolor.length) {
+				scolor = "0" + scolor;
+			}
 			return(scolor);
 		}
 	}

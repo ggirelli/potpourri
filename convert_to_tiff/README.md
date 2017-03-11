@@ -1,9 +1,7 @@
-#####<a href="../README.html">&#9664; Projects index</a>
-
 ND2 to TIFF file conversion
 ===
 
-## Convert_to_tif.js
+## `Convert_to_tif.js`
 
 `Convert_to_tif.js` is a JavaScript script that allows to convert images from the `.nd2` (and other formats) to the `.tif` format. To use it:
 
@@ -24,7 +22,15 @@ An updated FIJI is required to run the script.
 
 Copy the `Convert_to_tif.js` file to your `./Fiji.app/plugins/Scripts/Image/` folder and rename it as 'Convert_to_tif.js'. If you restart FIJI you'll see a new option in the `Image` menu.
 
-## nd2toTif.py
+## `ggBioFormats.m`
+
+MATLAB class that manages BioFormat conversions. Provided the path to the directory containing the `nd2` files, they will be converted to `tif` format. Provided the path to a `nd2` file, it will be converted to `tif` format.
+
+#### Requirements
+
+Download the `bfmatlab.zip` file from the BioFormats <a href="http://downloads.openmicroscopy.org/bio-formats/5.1.5/">download page</a>. Unzip the compressed folder and move the output to `~/.matlab/`. If you want to locate the BioFormats code in a different folder, <u>remember</u> to edit the GPSeq_Main.bfdir property before running the code (`GPSeq_Main.run()`). Always add BioFormats location to the current path by using `addpath(genpath(bf_location))`.
+
+## `nd2toTif.py`
 
 **nd2toTif.py** is a Python script that allows to convert images from the `.nd2` to the `.tif` format. The script can accept either the folder where the nd2 files are located or the path to the nd2 file.
 

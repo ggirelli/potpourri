@@ -71,12 +71,14 @@ fi
 case $mode in
 	'push')
 		function do_action() {
+			echo -e "> Pushing '$file'..."
 			git push
 		}
 	;;
 	'pull')
 		function do_action() {
-			git push
+			echo -e "> Pulling '$file'..."
+			git pull
 		}
 	;;
 esac
@@ -84,7 +86,6 @@ esac
 # Run on repos
 for	file in `ls`; do
 	if [ -d "$file/.git" ]; then
-		echo -e "> Pulling '$file'..."
 		cd $file
 		do_action
 		cd ..

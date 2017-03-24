@@ -144,7 +144,7 @@ def dJaro(l1, l2):
 			matches += 1
 
 	if 0 == matches:
-		return 0
+		return 1
 
 	# Count transpositions
 	transpositions = 0
@@ -250,26 +250,26 @@ def dOSA(l1, l2, relative = None):
 	l2_len = len(l2)
 
 	# Create matrix
-	d = np.zeros((l1_len, l2_len))
+	d = np.zeros((l1_len+1, l2_len+1))
 
 	# Starting distances
-	d[:, 0] = np.arange(l1_len)
-	d[0, :] = np.arange(l2_len)
+	d[:, 0] = np.arange(l1_len+1)
+	d[0, :] = np.arange(l2_len+1)
 
 	# Fill the matrix
-	for i in range(1, l1_len):
-		for j in range(1, l2_len):
+	for i in range(1, l1_len+1):
+		for j in range(1, l2_len+1):
 			cost = 0
-			if not l1[i] == l2[j]:
+			if not l1[i-1] == l2[j-1]:
 				cost = 1
 			d[i, j] = min([
 				d[i-1, j] +1,		# deletion
 				d[i, j-1] + 1,		# insertion
 				d[i-1, j-1] + cost	# substitution
 			])
-			if i > 1 and j > 1 and l1[i] == l2[j-1] and l1[i-1] == l2[j]:
+			if i > 1 and j > 1 and l1[i-1] == l2[j-2] and l1[i-2] == l2[j-1]:
 				d[i, j] = min([d[i, j], d[i-2, j-2] + cost]) # transposition
-
+	
 	# Output bottom right corner
 	if relative:
 		return int(d[-1, -1]) / float(max([l1_len, l2_len]))
@@ -278,7 +278,8 @@ def dOSA(l1, l2, relative = None):
 def dLevenshtein(l1, l2, relative = None):
 	'''Calculate the Levenshtein distance between two lists of
 	elements, as the number of edit operations (insertions, deletions or
-	substitutions) needed to make them identical.
+	substitutions) needed to make them identical,
+	under the condition that no substring is edited more than once.
 	if relative: (identical) 0 <= d <= 1 (totally different)
 	else: (identical) 0 <= d <= max(len(l1), len(l2)) (totally different)
 
@@ -310,24 +311,24 @@ def dLevenshtein(l1, l2, relative = None):
 	l2_len = len(l2)
 
 	# Create matrix
-	d = np.zeros((l1_len, l2_len))
+	d = np.zeros((l1_len+1, l2_len+1))
 
 	# Starting distances
-	d[:, 0] = np.arange(l1_len)
-	d[0, :] = np.arange(l2_len)
+	d[:, 0] = np.arange(l1_len+1)
+	d[0, :] = np.arange(l2_len+1)
 
 	# Fill the matrix
-	for i in range(1, l1_len):
-		for j in range(1, l2_len):
+	for i in range(1, l1_len + 1):
+		for j in range(1, l2_len + 1):
 			cost = 0
-			if not l1[i] == l2[j]:
+			if not l1[i-1] == l2[j-1]:
 				cost = 1
 			d[i, j] = min([
 				d[i-1, j] +1,		# deletion
 				d[i, j-1] + 1,		# insertion
 				d[i-1, j-1] + cost	# substitution
 			])
-
+	
 	# Output bottom right corner
 	if relative:
 		return int(d[-1, -1]) / float(max([l1_len, l2_len]))
@@ -361,7 +362,7 @@ def dDamerau(l1, l2, absize = None, relative = None):
 	l2 = str2list(l2)
 
 	# Default alphabet size value
-	lu = l1
+	lu = list(l1)
 	lu.extend(l2)
 	lu = unique(lu)
 	lu_len = len(lu)
@@ -388,19 +389,19 @@ def dDamerau(l1, l2, absize = None, relative = None):
 	l2_len = len(l2)
 
 	# Create matrix
-	d = np.zeros((l1_len + 1, l2_len + 1))
+	d = np.zeros((l1_len+1, l2_len+1))
 
 	# Starting distances
 	maxdist = l1_len + l2_len
 	d[:, 0] = maxdist
-	d[:, 1] = np.arange(l1_len + 1)
+	d[:, 1] = np.arange(l1_len+1)
 	d[0, :] = maxdist
-	d[1, :] = np.arange(l2_len + 1)
+	d[1, :] = np.arange(l2_len+1)
 
 	# Fill the matrix
-	for i in range(2, l1_len + 1):
+	for i in range(1, l1_len+1):
 		db = 1
-		for j in range(2, l2_len + 1):
+		for j in range(1, l2_len+1):
 			k = da[l2[j-1]]
 			l = db
 			cost = 1
@@ -486,6 +487,51 @@ def dLCS(s1, s2):
 	return 1 - len(LCS) / float(min(len(s1), len(s2)))
 
 # TEST =========================================================================
+
+print dHamming('1011101', '1001001') == 2
+print dHamming('1001001', '1011101') == 2
+print dHamming('2173896', '2233796') == 3
+print dHamming('2233796', '2173896') == 3
+print dHamming('karolin', 'kathrin') == 3
+print dHamming('kathrin', 'karolin') == 3
+print dHamming('karolin', 'kerstin') == 3
+print dHamming('kerstin', 'karolin') == 3
+
+print round(dJaro('MARTHA', 'MARHTA'), 3) == round(17/18., 3)
+print round(dJaro('MARHTA', 'MARTHA'), 3) == round(17/18., 3)
+print round(dWinkler('MARTHA', 'MARHTA'), 3) == round(17/18. + 1/60., 3)
+print round(dWinkler('MARHTA', 'MARTHA'), 3) == round(17/18. + 1/60., 3)
+print round(dJaro('DIXON', 'DICKSONX'), 3) == round(92/120., 3)
+print round(dJaro('DICKSONX', 'DIXON'), 3) == round(92/120., 3)
+print round(dWinkler('DIXON', 'DICKSONX'), 3) == round(92/120. + 28/600., 3)
+print round(dWinkler('DICKSONX', 'DIXON'), 3) == round(92/120. + 28/600., 3)
+
+print dOSA('CA', 'ABC') == 3
+print dOSA('ABC', 'CA') == 3
+print dOSA('rick', 'irkc') == 2
+print dOSA('irkc', 'rick') == 2
+print dOSA('irkc', 'rcik') == 4
+print dOSA('rcik', 'irkc') == 4
+print dOSA('rcik', 'rick') == 1
+print dOSA('rick', 'rcik') == 1
+
+print dLevenshtein('sitting', 'kitten') == 3
+print dLevenshtein('kitten', 'sitting') == 3
+print dLevenshtein('saturday', 'sunday') == 3
+print dLevenshtein('sunday', 'saturday') == 3
+print dLevenshtein('rick', 'irkc') == 3
+print dLevenshtein('irkc', 'rick') == 3
+print dLevenshtein('irkc', 'rcik') == 4
+print dLevenshtein('rcik', 'irkc') == 4
+print dLevenshtein('rcik', 'rick') == 2
+print dLevenshtein('rick', 'rcik') == 2
+
+print dDamerau('rick', 'irkc') == 3
+print dDamerau('irkc', 'rick') == 3
+print dDamerau('irkc', 'rcik') == 4
+print dDamerau('rcik', 'irkc') == 4
+print dDamerau('rcik', 'rick') == 2
+print dDamerau('rick', 'rcik') == 2
 
 # END ==========================================================================
 

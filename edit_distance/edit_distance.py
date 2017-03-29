@@ -496,6 +496,55 @@ def dLCS(s1, s2):
 
 	return 1 - len(LCS) / float(min(len(s1), len(s2)))
 
+def dKendall(l1, l2):
+	'''Calculate the Kendall tau distance between two lists of
+	elements, as the number of swaps needed to make them identical.
+	(identical) 0 <= d <= 1 (totally different)
+
+	Args:
+		l1 (list, string): first list.
+		l2 (list, string): second list.
+
+	Returns:
+		float: the Kendall tau distance between l1 and l2.
+	'''
+
+	# Convert strings to lists
+	l1 = str2list(l1)
+	l2 = str2list(l2)
+
+	# Lists MUST be lists
+	if any([not type(l) == type([]) for l in [l1, l2]]):
+		return None
+
+
+	# The lists MUST have the same length
+	if len(l1) != len(l2):
+		msg = 'The Kendall tau distance is not defined '
+		msg += 'for sets of different lengths.'
+		print(msg)
+		return None
+
+	# They must have the same number of elements
+	if not set(l1) == set(l2):
+		msg = 'The Kendall tau distance is not defined '
+		msg += 'for sets of different elements.'
+		print(msg)
+		return None
+
+	# Check list 2 ranking
+	ranked = [l1.index(e) for e in l2]
+
+	# Count swaps
+	steps = 0
+	for i in range(len(ranked)):
+		for j in range(i + 1, len(ranked)):
+			if ranked[i] > ranked[j]:
+				steps += 1
+
+	# Output normalization
+	return steps / ( len(l1) * (len(l1) - 1 ) / 2.)
+
 # TEST =========================================================================
 
 print dHamming('1011101', '1001001') == 2
@@ -542,6 +591,8 @@ print dDamerau('irkc', 'rcik') == 4
 print dDamerau('rcik', 'irkc') == 4
 print dDamerau('rcik', 'rick') == 2
 print dDamerau('rick', 'rcik') == 2
+
+print dKendall([1, 2, 3, 4, 5], [3, 4, 1, 2, 5]) == 0.4
 
 # END ==========================================================================
 

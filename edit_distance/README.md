@@ -50,3 +50,11 @@ The size (or length) of the **longest common subsequence** can be used as a meas
 Implemented in:
 
 * `edit_distance.py` : `dLCS`
+
+### Kendall tau distance
+
+> The Kendall tau distance is equivalent to the number of swaps that the bubble sort algorithm would make to place one list in the same order as the other list. ~Wikipedia
+
+Implemented in:
+
+* `edit_distance.py` : `dKendall`

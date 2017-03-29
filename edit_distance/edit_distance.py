@@ -258,16 +258,18 @@ def dOSA(l1, l2, relative = None):
 
 	# Fill the matrix
 	for i in range(1, l1_len+1):
+		ii = i - 1
 		for j in range(1, l2_len+1):
+			jj = j - 1
 			cost = 0
-			if not l1[i-1] == l2[j-1]:
+			if not l1[ii] == l2[jj]:
 				cost = 1
 			d[i, j] = min([
-				d[i-1, j] +1,		# deletion
+				d[i-1, j] + 1,		# deletion
 				d[i, j-1] + 1,		# insertion
 				d[i-1, j-1] + cost	# substitution
 			])
-			if i > 1 and j > 1 and l1[i-1] == l2[j-2] and l1[i-2] == l2[j-1]:
+			if i > 1 and j > 1 and l1[ii] == l2[jj-1] and l1[ii-1] == l2[jj]:
 				d[i, j] = min([d[i, j], d[i-2, j-2] + cost]) # transposition
 	
 	# Output bottom right corner
@@ -319,9 +321,11 @@ def dLevenshtein(l1, l2, relative = None):
 
 	# Fill the matrix
 	for i in range(1, l1_len + 1):
+		ii = i - 1
 		for j in range(1, l2_len + 1):
+			jj = j - 1
 			cost = 0
-			if not l1[i-1] == l2[j-1]:
+			if not l1[ii] == l2[jj]:
 				cost = 1
 			d[i, j] = min([
 				d[i-1, j] +1,		# deletion
@@ -379,42 +383,48 @@ def dDamerau(l1, l2, absize = None, relative = None):
 	if any([not type(l) == type([]) for l in [l1, l2]]):
 		return None
 
-	# Alphabet-sized vector
-	da = {}
-	for e in lu:
-		da[e] = 1
-
 	# Lists length
 	l1_len = len(l1)
 	l2_len = len(l2)
 
 	# Create matrix
-	d = np.zeros((l1_len+1, l2_len+1))
+	d = np.zeros((l1_len+2, l2_len+2))
+	a = np.zeros((l1_len+2, l2_len+2))
 
 	# Starting distances
 	maxdist = l1_len + l2_len
 	d[:, 0] = maxdist
-	d[:, 1] = np.arange(l1_len+1)
+	d[1:, 1] = np.arange(l1_len+1)
 	d[0, :] = maxdist
-	d[1, :] = np.arange(l2_len+1)
+	d[1, 1:] = np.arange(l2_len+1)
 
 	# Fill the matrix
-	for i in range(1, l1_len+1):
-		db = 1
-		for j in range(1, l2_len+1):
-			k = da[l2[j-1]]
-			l = db
+	for i in range(3, l1_len+2):
+		ii = i - 2
+		for j in range(3, l2_len+2):
+			jj = j - 2
+
 			cost = 1
-			if l1[i-1] == l2[j-1]:
+			if l1[ii] == l2[jj]:
 				cost = 0
-				db = j
-			d[i, j] = min([
+
+			if 0 == ii and 0 == jj:
+				calc = [
+					d[i-1, j-1] + cost,						# substitution
+					d[i, j-1] + 1,							# insertion
+					d[i-1, j] + 1,							# deletion
+				]
+				d[i, j] = min(calc)
+				a[i, j] = calc.index(min(calc))
+
+			calc = [
 				d[i-1, j-1] + cost,						# substitution
 				d[i, j-1] + 1,							# insertion
 				d[i-1, j] + 1,							# deletion
-				d[k-1, l-1] + (i-k-1) + 1 + (j-l-1)		# transposition
-			])
-		da[l1[i-1]] = i
+				d[i-2, j-2] + 1							# transposition
+			]
+			d[i, j] = min(calc)
+			a[i, j] = calc.index(min(calc))
 
 	# Output bottom right corner
 	if relative:
@@ -526,8 +536,8 @@ print dLevenshtein('rcik', 'irkc') == 4
 print dLevenshtein('rcik', 'rick') == 2
 print dLevenshtein('rick', 'rcik') == 2
 
-print dDamerau('rick', 'irkc') == 3
-print dDamerau('irkc', 'rick') == 3
+print dDamerau('rick', 'irkc') == 2
+print dDamerau('irkc', 'rick') == 2
 print dDamerau('irkc', 'rcik') == 4
 print dDamerau('rcik', 'irkc') == 4
 print dDamerau('rcik', 'rick') == 2

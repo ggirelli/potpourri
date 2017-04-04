@@ -1,4 +1,4 @@
-3D dots in elliptical volume
+3D-dots-in-elliptical-volume
 ===
 
 3D dots simulation in a specified elliptical volume.

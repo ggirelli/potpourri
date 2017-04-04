@@ -1,4 +1,4 @@
-ND2 to TIFF file conversion
+Convert-to-tiff
 ===
 
 ## `Convert_to_tif.js`

@@ -1,4 +1,4 @@
-git_tools
+git-tools
 ===
 
 Scripts for easy git repo management.

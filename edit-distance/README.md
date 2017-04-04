@@ -1,4 +1,4 @@
-Edit distance
+Edit-distance
 ===
 
 A set of functions to calculate the edit distance between two lists of elements.

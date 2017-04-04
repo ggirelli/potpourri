@@ -114,7 +114,7 @@ fi
 
 # Run single-reshuffling script
 for bfi in $(seq 0 `bc <<< "${#bedfiles[@]}-1"`); do
-	bf=${bedfiles[$i]}
+	bf=${bedfiles[$bfi]}
 	if [ 0 -eq $bfi ]; then
 		./bed_shuffle.R $seed $bf -n $nIter -p $perc -o $outDir -k T -t $threads
 	else

@@ -27,7 +27,7 @@ parser = arg_parser('Shuffle bed file reads.', name = 'bed_shuffle.R')
 parser = add_argument(parser, arg = 'seed', short = '-s',
 	help = 'Seed for random number generation.', type = class(0))
 parser = add_argument(parser, arg = 'bedfile', short = '-b',
-	help = 'path to bedfile.', type = class(''))
+	help = 'Path to bedfile.', type = class(''))
 
 # Define elective arguments
 parser = add_argument(parser, arg = '--nIter', short = '-n',

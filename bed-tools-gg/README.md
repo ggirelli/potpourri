@@ -26,6 +26,8 @@ Cheers!
 
 ## `bed_shuffle.R`
 
+Shuffle the reads (i.e., the score values) of the score column of a bed file. The score values are not merely shuffled but considered as read counts, then the reads are shuffled.
+
 Saves the current random number generator seed status at the end of the script in `OUTDIR/.Random.seed.RData`. Subsequent runs of the script, with the same `OUTDIR`, will re-load the seed status unless `-k F` is used.
 
 ```

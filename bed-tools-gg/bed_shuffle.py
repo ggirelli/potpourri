@@ -112,6 +112,7 @@ for i in range(nIter):
 	shuffled = bf.copy()
 	shuffled['score'] = np.zeros(shuffled['score'].shape)
 	shuffled['score'][counts[0]] = counts[1]
+	shuffled['score'] = shuffled['score'].astype('int')
 
 	# Output
 	shuffled.to_csv(outDir+outName+'.iter'+str(i+1)+'.'+str(perc)+'perc.bed',

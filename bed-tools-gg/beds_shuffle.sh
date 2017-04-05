@@ -38,24 +38,22 @@ helps="
   -n nIter	Number of iterations. Default: 100
   -p perc	Percentage of reads to shuffle. Default: 10
   -o outDir	Output directory. Default: ./shuffled/
-  -t threads	Number of threads for parallelization. Default: 1
 "
 
 # Default values
 nIter=100
 perc=10
 outDir='./shuffled/'
-threads=1
 
 # Parse options
-while getopts hn:p:o:s:t: opt "${bedfiles[@]}"; do
+while getopts hn:p:o:s: opt "${bedfiles[@]}"; do
 	case $opt in
 		h)
 			echo -e "$helps\n"
 			exit 0
 		;;
 		n)
-			if [ 1 -le $OPTARG]; then
+			if [ 1 -le $OPTARG ]; then
 				nIter=$OPTARG
 			fi
 		;;
@@ -69,11 +67,6 @@ while getopts hn:p:o:s:t: opt "${bedfiles[@]}"; do
 		;;
 		s)
 			seed=$OPTARG
-		;;
-		t)
-			if [ 1 -lt $OPTARG ]; then
-				threads=$OPTARG
-			fi
 		;;
 	esac
 done
@@ -116,9 +109,9 @@ fi
 for bfi in $(seq 0 `bc <<< "${#bedfiles[@]}-1"`); do
 	bf=${bedfiles[$bfi]}
 	if [ 0 -eq $bfi ]; then
-		./bed_shuffle.R $seed $bf -n $nIter -p $perc -o $outDir -k T -t $threads
+		./bed_shuffle.py $seed $bf -n $nIter -p $perc -o $outDir -k 0
 	else
-		./bed_shuffle.R $seed $bf -n $nIter -p $perc -o $outDir -t $threads
+		./bed_shuffle.py $seed $bf -n $nIter -p $perc -o $outDir
 	fi
 done
 

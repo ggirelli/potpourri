@@ -21,6 +21,8 @@ import pandas as pd
 import pickle
 import sys
 
+pd.options.mode.chained_assignment = None  # default='warn'
+
 # INPUT ========================================================================
 
 # Add script description
@@ -56,10 +58,17 @@ perc = args.p[0]
 outDir = args.o[0]
 keepSeed = args.k[0]
 
+# Output file name prefix
+outName = '.'.join(bedfile.split('/')[-1].split('.')[:-1])
+
+# Make output directory if missing
+if not os.path.isdir(outDir):
+	os.makedirs(outDir)
+
 # RUN ==========================================================================
 
 # Log info
-print(' · Shuffling x'+str(nIter)+' '+str(perc)+'%% of '+bedfile+'\n')
+print(' · Shuffling x'+str(nIter)+' '+str(perc)+'% of '+bedfile)
 
 # Set seed
 seed = np.random.RandomState(seed)
@@ -82,27 +91,30 @@ bf = pd.read_csv(bedfile, '\t', skiprows = [0],
 nreads = sum(bf['score'])
 toShuffle = nreads * perc / 100
 
-print(' >>> Found ' + str(nreads), ' reads.')
-print(bf.shape)
+print(' >>> Found ' + str(nreads) + ' reads.')
+
 
 print(' >>> Pre-shuffling...')
 preshuffle = np.repeat(np.arange(len(bf['score'])), bf['score'])
 
-print(' >>># Shuffle...')
-pos_from = seed.randint(0, len(preshuffle), toShuffle)
-pos_to = seed.randint(0, len(bf['score']), toShuffle)
+for i in range(nIter):
+	print(' >>># Shuffle...')
+	pos_from = seed.randint(0, len(preshuffle), toShuffle)
+	pos_to = seed.randint(0, len(bf['score']), toShuffle)
 
-print(' >>># Moving reads...')
-shuffled = np.array(preshuffle)
-shuffled[pos_from] = pos_to
+	print(' >>># Moving reads...')
+	shuffled = np.array(preshuffle)
+	shuffled[pos_from] = pos_to
 
-print(' >>># Counting shuffled reads')
-counts = np.unique(shuffled, return_counts = True)
-shuffled = bf.copy()
-print(counts[0])
-shuffled[counts[0]] = counts[1]
-print(bf['score'])
-print(shuffled['score'])
+	print(' >>># Counting shuffled reads')
+	counts = np.unique(shuffled, return_counts = True)
+	shuffled = bf.copy()
+	shuffled['score'] = np.zeros(shuffled['score'].shape)
+	shuffled['score'][counts[0]] = counts[1]
+
+	# Output
+	shuffled.to_csv(outDir+outName+'.iter'+str(i+1)+'.'+str(perc)+'perc.bed',
+		sep = '\t', header = False)
 
 # Saving seed state
 seed_state = seed.get_state()

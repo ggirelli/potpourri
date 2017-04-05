@@ -98,6 +98,7 @@ print(' >>> Pre-shuffling...')
 preshuffle = np.repeat(np.arange(len(bf['score'])), bf['score'])
 
 for i in range(nIter):
+	print(' >>># Iteration #' + str(i+1))
 	print(' >>># Shuffle...')
 	pos_from = seed.randint(0, len(preshuffle), toShuffle)
 	pos_to = seed.randint(0, len(bf['score']), toShuffle)

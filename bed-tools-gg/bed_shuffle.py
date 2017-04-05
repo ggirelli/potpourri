@@ -115,7 +115,7 @@ for i in range(nIter):
 
 	# Output
 	shuffled.to_csv(outDir+outName+'.iter'+str(i+1)+'.'+str(perc)+'perc.bed',
-		sep = '\t', header = False)
+		sep = '\t', header = False, index = False)
 
 # Saving seed state
 seed_state = seed.get_state()

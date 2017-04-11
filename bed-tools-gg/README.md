@@ -24,37 +24,49 @@ Cheers!
   -n        Merge bedfiles based on name instead of location.
 ```
 
-## `bed_shuffle.R`
+## `bed_addROIs`
+
+```
+usage: bed_addROIs.py [-h] [-u] [-m] [-l] regfile bedfile outfile
+
+Assigns rows in a bed file to a given list of regions of interest (ROIs). The
+ROIs can be overlapping. A new column is added to the end of the bed file,
+with all the regions containing it, in the chr:start-end format, space-
+separated.
+
+positional arguments:
+  regfile     Path to bedfile, containing regions to be assigne to.
+  bedfile     Path to bedfile, containing rows to be assigned.
+  outfile     Output file (not a bed).
+
+optional arguments:
+  -h, --help  show this help message and exit
+  -u          Keep bedfile rows that do not match any region.
+  -m          Keep bedfile rows that do match a region partially.
+  -l          Keep bedfile rows that include a region.
+```
+
+## `bed_shuffle.py`
 
 Shuffle the reads (i.e., the score values) of the score column of a bed file. The score values are not merely shuffled but considered as read counts, then the reads are shuffled.
 
-Saves the current random number generator seed status at the end of the script in `OUTDIR/.Random.seed.RData`. Subsequent runs of the script, with the same `OUTDIR`, will re-load the seed status unless `-k F` is used.
+Saves the current random number generator seed status at the end of the script in `OUTDIR/.seed_state.pickle`. Subsequent runs of the script, with the same `OUTDIR`, will NOT re-load the seed status unless `-k` is used.
 
 ```
-usage: bed_shuffle.R [-h][-n NITER][-p PERC][-o OUTDIR]
-                     [-k KEEPSEED][-t THREADS] seed bedfile
+usage: bed_shuffle.py [-h] [-k] [-n nIter] [-p perc] [-o outDir] seed bedfile
 
-Shuffle bed file reads.
+Shuffle bed file read counts.
 
 positional arguments:
-  seed              Seed for random number generation.
-  bedfile           Path to bedfile.
-
-flags:
-  -h, --help            show this help message and exit
+  seed        Seed for random number generation.
+  bedfile     Path to bedfile.
 
 optional arguments:
-  -n NITER       Number of iterations.
-                 [default: 100]
-  -p PERC        Percentage of reads to shuffle.
-                 [default: 10]
-  -o OUTDIR      Output directory.
-                 [default: ./shuffled/]
-  -k KEEPSEED    Reload previous seed state. Use on subsequent runs.
-                 [default: TRUE]
-  -t THREADS     Number of threads for parallelization.
-                 [default: 1]
-
+  -h, --help  show this help message and exit
+  -k          Reload previous seed state. Use on subsequent runs.
+  -n nIter    Number of iterations.
+  -p perc     Percentage of reads to shuffle.
+  -o outDir   Output directory.
 ```
 
 ## `beds_shuffle.sh`

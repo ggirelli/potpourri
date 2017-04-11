@@ -37,15 +37,15 @@ parser.add_argument('bedfile', type = str, nargs = 1,
 	help = 'Path to bedfile.')
 
 # Add flags
+parser.add_argument('-k',
+	action = 'store_const', const = True, default = False,
+	help = 'Reload previous seed state. Use on subsequent runs.')
 parser.add_argument('-n', metavar = 'nIter', type = int, nargs = 1,
 	default = [100], help = 'Number of iterations.')
 parser.add_argument('-p', metavar = 'perc', type = int, nargs = 1,
 	default = [10], help = 'Percentage of reads to shuffle.')
 parser.add_argument('-o', metavar = 'outDir', type = str, nargs = 1,
 	default = ['./shuffled/'], help = 'Output directory.')
-parser.add_argument('-k', metavar = 'keepSeed', type = bool, nargs = 1,
-	default = [True],
-	help = 'Reload previous seed state. Use on subsequent runs.')
 
 # Parse arguments
 args = parser.parse_args()
@@ -56,7 +56,7 @@ bedfile = args.bedfile[0]
 nIter = args.n[0]
 perc = args.p[0]
 outDir = args.o[0]
-keepSeed = args.k[0]
+keepSeed = args.k
 
 # Output file name prefix
 outName = '.'.join(bedfile.split('/')[-1].split('.')[:-1])

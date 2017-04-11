@@ -7,6 +7,8 @@
 # Version: 1.0.1
 # Description: Shuffle a certain percentage of reads in a bed file.
 # 
+# !!! NOTE: THIS SCRIPT IS LESS EFFICIENT THAN THE PYTHON VERSION !!!
+# 
 # ------------------------------------------------------------------------------
 
 

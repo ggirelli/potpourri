@@ -76,12 +76,12 @@ fi
 # RUN ==========================================================================
 
 awkprogram='{
-	OFS=FS=del
-	for (i=1; i <= $coli; i++) {
-		print $1 OFS $2 OFS $3
+	OFS=FS=del;
+	for (i=$coli; i >= 1; i--) {
+		print $1 OFS $2 OFS $3;
 	}
 }'
-cat $bedfile | awk -v del="$delimiter" -v coli="$colID" "$awkprogram"
+cat $bedfile | awk -v del="$delimiter" -v coli=$colID "$awkprogram"
 
 # End --------------------------------------------------------------------------
 

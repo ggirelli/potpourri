@@ -35,7 +35,7 @@ parser = argparse.ArgumentParser(
 
 # Add params
 parser.add_argument('regfile', type = str, nargs = 1,
-	help = 'Path to bedfile, containing regions to be assigne to.')
+	help = 'Path to bedfile, containing regions to be assigned to.')
 parser.add_argument('bedfile', type = str, nargs = 1,
 	help = 'Path to bedfile, containing rows to be assigned.')
 
@@ -45,10 +45,10 @@ parser.add_argument('-u',
 	help = 'Keep bedfile rows that do not match any region.')
 parser.add_argument('-m',
 	action = 'store_const', const = True, default = False,
-	help = 'Keep bedfile rows that do match a region partially.')
+	help = 'Assign to bedfile rows that partially match a region.')
 parser.add_argument('-l',
 	action = 'store_const', const = True, default = False,
-	help = 'Keep bedfile rows that include a region.')
+	help = 'Assign to bedfile rows that include a region.')
 parser.add_argument('-o', metavar = 'outfile', type = str, nargs = 1,
 	default = [False],
 	help = 'Output file (not a bed). Output to stdout if not specified.')

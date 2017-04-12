@@ -38,8 +38,6 @@ parser.add_argument('regfile', type = str, nargs = 1,
 	help = 'Path to bedfile, containing regions to be assigne to.')
 parser.add_argument('bedfile', type = str, nargs = 1,
 	help = 'Path to bedfile, containing rows to be assigned.')
-parser.add_argument('outfile', type = str, nargs = 1,
-	help = 'Output file (not a bed).')
 
 # Add flags
 parser.add_argument('-u',
@@ -51,6 +49,9 @@ parser.add_argument('-m',
 parser.add_argument('-l',
 	action = 'store_const', const = True, default = False,
 	help = 'Keep bedfile rows that include a region.')
+parser.add_argument('-o', metavar = 'outfile', type = str, nargs = 1,
+	default = [False],
+	help = 'Output file (not a bed). Output to stdout if not specified.')
 
 # Parse arguments
 args = parser.parse_args()
@@ -58,10 +59,10 @@ args = parser.parse_args()
 # Retrieve arguments
 regfile = args.regfile[0]
 bedfile = args.bedfile[0]
-outfile = args.outfile[0]
 keep_unassigned_rows = args.u
 keep_marginal_overlaps = args.m
 keep_including = args.l
+outfile = args.o[0]
 
 # Default variables
 bedcolnames = ['chr', 'start', 'end', 'name', 'score']
@@ -169,7 +170,11 @@ if not keep_unassigned_rows:
 	bed = bed[bed['rois'] != '']
 
 # Output
-bed.to_csv(outfile, sep = '\t', header = False, index = False)
+if False == outfile:
+	for i in range(bed.shape[0]):
+		print('\t'.join(bed.iloc[i, :].astype('str').tolist()))
+else:
+	bed.to_csv(outfile, sep = '\t', header = False, index = False)
 
 # END --------------------------------------------------------------------------
 

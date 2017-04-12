@@ -547,52 +547,48 @@ def dKendall(l1, l2):
 
 # TEST =========================================================================
 
-print dHamming('1011101', '1001001') == 2
-print dHamming('1001001', '1011101') == 2
-print dHamming('2173896', '2233796') == 3
-print dHamming('2233796', '2173896') == 3
-print dHamming('karolin', 'kathrin') == 3
-print dHamming('kathrin', 'karolin') == 3
-print dHamming('karolin', 'kerstin') == 3
-print dHamming('kerstin', 'karolin') == 3
-
-print round(dJaro('MARTHA', 'MARHTA'), 3) == round(17/18., 3)
-print round(dJaro('MARHTA', 'MARTHA'), 3) == round(17/18., 3)
-print round(dWinkler('MARTHA', 'MARHTA'), 3) == round(17/18. + 1/60., 3)
-print round(dWinkler('MARHTA', 'MARTHA'), 3) == round(17/18. + 1/60., 3)
-print round(dJaro('DIXON', 'DICKSONX'), 3) == round(92/120., 3)
-print round(dJaro('DICKSONX', 'DIXON'), 3) == round(92/120., 3)
-print round(dWinkler('DIXON', 'DICKSONX'), 3) == round(92/120. + 28/600., 3)
-print round(dWinkler('DICKSONX', 'DIXON'), 3) == round(92/120. + 28/600., 3)
-
-print dOSA('CA', 'ABC') == 3
-print dOSA('ABC', 'CA') == 3
-print dOSA('rick', 'irkc') == 2
-print dOSA('irkc', 'rick') == 2
-print dOSA('irkc', 'rcik') == 4
-print dOSA('rcik', 'irkc') == 4
-print dOSA('rcik', 'rick') == 1
-print dOSA('rick', 'rcik') == 1
-
-print dLevenshtein('sitting', 'kitten') == 3
-print dLevenshtein('kitten', 'sitting') == 3
-print dLevenshtein('saturday', 'sunday') == 3
-print dLevenshtein('sunday', 'saturday') == 3
-print dLevenshtein('rick', 'irkc') == 3
-print dLevenshtein('irkc', 'rick') == 3
-print dLevenshtein('irkc', 'rcik') == 4
-print dLevenshtein('rcik', 'irkc') == 4
-print dLevenshtein('rcik', 'rick') == 2
-print dLevenshtein('rick', 'rcik') == 2
-
-print dDamerau('rick', 'irkc') == 2
-print dDamerau('irkc', 'rick') == 2
-print dDamerau('irkc', 'rcik') == 4
-print dDamerau('rcik', 'irkc') == 4
-print dDamerau('rcik', 'rick') == 2
-print dDamerau('rick', 'rcik') == 2
-
-print dKendall([1, 2, 3, 4, 5], [3, 4, 1, 2, 5]) == 0.4
+if False:
+	print dHamming('1011101', '1001001') == 2
+	print dHamming('1001001', '1011101') == 2
+	print dHamming('2173896', '2233796') == 3
+	print dHamming('2233796', '2173896') == 3
+	print dHamming('karolin', 'kathrin') == 3
+	print dHamming('kathrin', 'karolin') == 3
+	print dHamming('karolin', 'kerstin') == 3
+	print dHamming('kerstin', 'karolin') == 3
+	print round(dJaro('MARTHA', 'MARHTA'), 3) == round(17/18., 3)
+	print round(dJaro('MARHTA', 'MARTHA'), 3) == round(17/18., 3)
+	print round(dWinkler('MARTHA', 'MARHTA'), 3) == round(17/18. + 1/60., 3)
+	print round(dWinkler('MARHTA', 'MARTHA'), 3) == round(17/18. + 1/60., 3)
+	print round(dJaro('DIXON', 'DICKSONX'), 3) == round(92/120., 3)
+	print round(dJaro('DICKSONX', 'DIXON'), 3) == round(92/120., 3)
+	print round(dWinkler('DIXON', 'DICKSONX'), 3) == round(92/120. + 28/600., 3)
+	print round(dWinkler('DICKSONX', 'DIXON'), 3) == round(92/120. + 28/600., 3)
+	print dOSA('CA', 'ABC') == 3
+	print dOSA('ABC', 'CA') == 3
+	print dOSA('rick', 'irkc') == 2
+	print dOSA('irkc', 'rick') == 2
+	print dOSA('irkc', 'rcik') == 4
+	print dOSA('rcik', 'irkc') == 4
+	print dOSA('rcik', 'rick') == 1
+	print dOSA('rick', 'rcik') == 1
+	print dLevenshtein('sitting', 'kitten') == 3
+	print dLevenshtein('kitten', 'sitting') == 3
+	print dLevenshtein('saturday', 'sunday') == 3
+	print dLevenshtein('sunday', 'saturday') == 3
+	print dLevenshtein('rick', 'irkc') == 3
+	print dLevenshtein('irkc', 'rick') == 3
+	print dLevenshtein('irkc', 'rcik') == 4
+	print dLevenshtein('rcik', 'irkc') == 4
+	print dLevenshtein('rcik', 'rick') == 2
+	print dLevenshtein('rick', 'rcik') == 2
+	print dDamerau('rick', 'irkc') == 2
+	print dDamerau('irkc', 'rick') == 2
+	print dDamerau('irkc', 'rcik') == 4
+	print dDamerau('rcik', 'irkc') == 4
+	print dDamerau('rcik', 'rick') == 2
+	print dDamerau('rick', 'rcik') == 2
+	print dKendall([1, 2, 3, 4, 5], [3, 4, 1, 2, 5]) == 0.4
 
 # END ==========================================================================
 

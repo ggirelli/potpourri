@@ -7,7 +7,7 @@ Cheers!
 
 └[∵┌]└[ ∵ ]┘[┐∵]┘
 
-## `bed2matrix.sh`
+## `./bed2matrix.sh`
 
 ```
  usage: ./bed2matrix.sh [-hn] [BEDFILEs]...
@@ -24,7 +24,7 @@ Cheers!
   -n        Merge bedfiles based on name instead of location.
 ```
 
-## `bed_addROIs`
+## `./bed_addROIs`
 
 ```
 usage: bed_addROIs.py [-h] [-u] [-m] [-l] regfile bedfile outfile
@@ -46,7 +46,26 @@ optional arguments:
   -l          Keep bedfile rows that include a region.
 ```
 
-## `bed_shuffle.py`
+## `./bed_rep.sh`
+
+```
+ usage: ./bed_rep.sh [-h][-c colID][-d del] -b bedfile
+
+ Description:
+  Repeat a bedfile row as many times as specified in the score column.
+  Following the bed format, the score column should be the 5th column.
+  If not, specify the index of the column using the -c option.
+
+ Mandatory arguments:
+  -b bedfile  Bed file.
+
+ Optional arguments:
+  -h          Show this help page.
+  -c colID    Column index (1-indexed). [Default: 5]
+  -d del      Column delimiter. [Default: TAB]
+```
+
+## `./bed_shuffle.py`
 
 Shuffle the reads (i.e., the score values) of the score column of a bed file. The score values are not merely shuffled but considered as read counts, then the reads are shuffled.
 
@@ -69,7 +88,7 @@ optional arguments:
   -o outDir   Output directory.
 ```
 
-## `beds_shuffle.sh`
+## `./beds_shuffle.sh`
 
 Runs `bed_shuffle.R` on the given bedfile(s). The initial seed is consistently kept through the R script runs as it is saved and re-loaded.
 

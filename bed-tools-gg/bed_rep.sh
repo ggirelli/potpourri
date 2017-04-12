@@ -77,7 +77,7 @@ fi
 
 awkprogram='{
 	OFS=FS=del
-	for (i=1; i <= coli; i++) {
+	for (i=1; i <= $coli; i++) {
 		print $1 OFS $2 OFS $3
 	}
 }'

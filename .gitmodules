@@ -1,0 +1,3 @@
+[submodule "bed-tools-gg"]
+	path = bed-tools-gg
+	url = git@github.com:ggirelli/potpourri.git

@@ -9,3 +9,19 @@ Briefly:
 Cheers!
 
 └[∵┌]└[ ∵ ]┘[┐∵]┘
+
+## `./fasta_filter.py`
+
+```
+usage: fasta_filter.py [-h] FASTA regexp
+
+Select sequences from the input FASTA file that match a given regular
+expression in their header.
+
+positional arguments:
+  FASTA       Path to a fasta file.
+  regexp      Regular expression to match to the header.
+
+optional arguments:
+  -h, --help  show this help message and exit
+```

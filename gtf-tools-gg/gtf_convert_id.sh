@@ -23,7 +23,7 @@ function join_by { local IFS="$1"; shift; echo "$*"; }
 
 # Help string
 helps="
- usage: ./gtf_convert_id.sh [-hf] -g gtf -c conv
+ usage: ./gtf_convert_id.sh [-hvr][-f field] -g gtf -c conv
 
  Description:
   Convert IDs in the specified field of a GTF attribute column. Requires a GTF
@@ -125,14 +125,14 @@ BEGIN {
 	nattrs=split($9, attributes, "; ");
 
 	# Define empty key and value counters
-	k=0
-	v=0
+	k=0;
+	v=0;
 
 	# Check the attributes
 	for ( i = 0; i < nattrs; i++ ) {
 
 		# Identify attribute key and value
-		split(attributes[i], cattr, " ")
+		split(attributes[i], cattr, " ");
 
 		# If this is the specified attribute (-f)
 		if ( cattr[1] == lab ) {
@@ -167,7 +167,7 @@ BEGIN {
 	# Output based on skip options
 	if ( "false" == skipKey || 0 != k )
 		if ( "false" == skipVal || 0 != v )
-			print $0
+			print $0;
 }
 '
 

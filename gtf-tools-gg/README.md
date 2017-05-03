@@ -40,3 +40,21 @@ Cheers!
   -f field  Label of the attribute column field containing the ID to convert.
             Default: ref_gene_id
 ```
+
+## `./gtf_copy_attr.sh`
+
+```
+ usage: ./gtf_copy_attr.sh [-h] -g gtf -1 from -2 to
+
+ Description:
+  Overwrites the value of attribute (-2) with the value of attribute (-1)
+
+ Mandatory arguments:
+  -g gtf    GTF file.
+  -1 from   Attribute value to copy from.
+  -2 to     Attribute value to copy to.
+
+ Optional arguments:
+  -h        Show this help page.
+```
+

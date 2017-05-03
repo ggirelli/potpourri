@@ -1,4 +1,4 @@
-bed-tools-gg
+fasta-tools-gg
 ===
 
 A few scripts to manage fasta files, more details on the format are available [here](http://zhanglab.ccmb.med.umich.edu/FASTA/).

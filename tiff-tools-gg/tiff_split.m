@@ -1,9 +1,9 @@
 % Splits the filename tiff image in smaller square tiff images of side
 % small_side, saving them in the folder outfolder
 %
-% split_tiff(filename, outfolder, small_side)
-% split_tiff('dapi_001.tif', 'output', 1024)
-function split_tiff(filename, outfolder, small_side)
+% tiff_split(filename, outfolder, small_side)
+% tiff_split('dapi_001.tif', 'output', 1024)
+function tiff_split(filename, outfolder, small_side)
 
     % Check that output folder exists
     if ~strcmp(outfolder(end), '/')

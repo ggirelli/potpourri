@@ -1,9 +1,9 @@
-Convert-to-tiff
+tiff-tools-gg: Conversion
 ===
 
 ## `Convert_to_tif.js`
 
-`Convert_to_tif.js` is a JavaScript script that allows to convert images from the `.nd2` (and other formats) to the `.tif` format. To use it:
+`Convert_to_tif.js` is a JavaScript script that allows to convert images from the `.nd2` (and other formats that FIJI can read) to the `.tif` format. To use it:
 
 1. Open FIJI
 2. Drag and drop the `Convert_to_tif.js` file on FIJI

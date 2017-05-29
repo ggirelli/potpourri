@@ -5,6 +5,8 @@ Suit to select set of oligomers as FISH probes from databases of locus-specific 
 
 The `extract_database.py` script can be used to convert a sqlite3 database into single-chromosome txt files in the aforementioned format.
 
+A web-interface to interact with the `query_database.py` script is available.
+
 ## How-to
 
 0. Create `mkdir ../db/` and `mkdir ../query/`.

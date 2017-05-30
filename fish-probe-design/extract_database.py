@@ -36,6 +36,11 @@ parser.add_argument('table', metavar = 'table', type = str, nargs = 1,
 parser.add_argument('--outdir', metavar = 'od', type = str, nargs = 1,
 	default = ['.'], help = 'Database directory path.')
 
+parser.add_argument('-r', '--rna', action = 'store_const',
+	help = """Input database from transcriptome pipeline.
+	Uses GSTART as positional column.""",
+	const = True, default = False)
+
 # Parse arguments
 args = parser.parse_args()
 
@@ -43,6 +48,7 @@ args = parser.parse_args()
 dbpath = args.db[0]
 table = args.table[0]
 outdir = args.outdir[0]
+trans = args.rna
 
 # FUNCTIONS ====================================================================
 
@@ -88,8 +94,13 @@ for chrom in chrlist:
 	# Open file connection
 	outf = open(fpath, 'a+')
 
-	# Query to get positions
-	q = 'SELECT START FROM ' + table + ' WHERE CHR=?'
+	# Prepare query to get positions
+	if not trans:
+		q = 'SELECT START FROM ' + table + ' WHERE CHR=?'
+	else:
+		q = 'SELECT GSTART FROM ' + table + ' WHERE CHR=?'
+
+	# Run query
 	for row in c.execute(q, (chrom,)):
 		# Output position
 		outf.write(','.join([str(i) for i in row]) + '\n')

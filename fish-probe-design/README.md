@@ -16,4 +16,3 @@ A web-interface to interact with the `query_database.py` script is available.
 ## @TODO
 
 * Specify expected database folder name format.
-* Updated `extract_database.py` script for transcriptome pipeline output.

@@ -96,9 +96,9 @@ for chrom in chrlist:
 
 	# Prepare query to get positions
 	if not trans:
-		q = 'SELECT START FROM ' + table + ' WHERE CHR=?'
+		q = 'SELECT START FROM ' + table + ' WHERE CHR=? ORDER BY START'
 	else:
-		q = 'SELECT GSTART FROM ' + table + ' WHERE CHR=?'
+		q = 'SELECT GSTART FROM ' + table + ' WHERE CHR=? ORDER BY GSTART'
 
 	# Run query
 	for row in c.execute(q, (chrom,)):

@@ -17,6 +17,9 @@
 # 		PM: Perfect Match.
 # 		OT: Off Target.
 # 		The script should be run on single-gene outputs.
+# 		
+# @TODO:
+# 	Include BioMaRt so that the geneTranscriptTable is not needed anymore.
 # 
 # Changelog:
 # 		1.0.0: first implementation.

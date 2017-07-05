@@ -156,15 +156,18 @@ with open(blast_output) as bof:
 				# With homology higher than the threshold
 				if homology > max_homology[OID]:
 					max_homology[OID] = homology
+		elif not OID in max_homology.keys():
+			max_homology[OID] = 0
 
 # Identify oligos that pass the threshold
 pass_homology = []
 for OID in max_homology.keys():
 	if max_homology[OID] < homThr:
 		pass_homology.append(OID)
+
 # Log
 print(" >>> %d oligos do not have any off-targets." % (len(pass_homology),))
-print(" >>> %d oligos have off-targets." % (len(max_homology),))
+print(" >>> %d oligos have off-targets." % (len(max_homology)-len(pass_homology),))
 print(" >>> Saving off-target free oligos. Analyzing further the rest.")
 
 # Check off target location

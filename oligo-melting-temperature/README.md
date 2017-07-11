@@ -3,9 +3,9 @@ oligo-melting-temperature
 
 The `oligo_tm_calc.py` script, implemented in Python, allows to calculate the melting temperature of a DNA duplex, provided the sequence of one of the two strands.
 
-The calculation is based on the N-N thermodynamic values presented in Allawi&Santalucia[^1]. The melting temperature calculation is based on Santalucia, 1998[^2]. Sodium and cagnesium concentration correction is based on the work of Owczarzy et al[^3] [^4].
+The calculation is based on the N-N thermodynamic values presented in Allawi&Santalucia[1]. The melting temperature calculation is based on Santalucia, 1998[2]. Sodium and cagnesium concentration correction is based on the work of Owczarzy et al[3,4].
 
-By specifying the `-t` option, it is also possible to use the N-N thermodynamic values presented in Freier et al[^5] for RNA.
+By specifying the `-t` option, it is also possible to use the N-N thermodynamic values presented in Freier et al[5] for RNA.
 
 ### Help page
 
@@ -40,8 +40,8 @@ optional arguments:
 
 ### References
 
-[^1]: Allawi & Santalucia, Biochemistry(36), 1997
-[^2]: SantaLucia, PNAS(95), 1998
-[^3]: Owczarzy et al, Biochemistry(43), 2004
-[^4]: Owczarzy et al, Biochemistry(47), 2008
-[^5]: Freier et al, PNAS(83), 1986
+1. Allawi & Santalucia, Biochemistry(36), 1997
+2. SantaLucia, PNAS(95), 1998
+3. Owczarzy et al, Biochemistry(43), 2004
+4. Owczarzy et al, Biochemistry(47), 2008
+5. Freier et al, PNAS(83), 1986

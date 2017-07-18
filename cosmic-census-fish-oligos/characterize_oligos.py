@@ -211,11 +211,13 @@ with open(fain, 'r') as fin:
 			continue
 		line = line.upper().strip()
 		(fgc, tm, hp) = characterize(line, oligo_conc, hp_len)
-		fout.write("%s\t%f\t%f\t%d" % (line, fgc, tm, hp))
+		fout.write("%s\t%f\t%f\t%d\n" % (line, fgc, tm, hp))
 		bar.update(i)
 		i += 1
 fout.close()
 fin.close()
+
+print("Skipped %d sequences containing Ns." % (i,))
 
 # END ==========================================================================
 

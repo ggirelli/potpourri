@@ -20,11 +20,36 @@ import time
 
 # PARAMETERS ===================================================================
 
-# Input fasta without headers
-fain = "/media/gire/Data/BiCro-Data/Sequencing/COSMIC/25mer.uniq.fa"
 
-oligo_conc = 0.25e-6 #M
-hp_len = 4
+# Add script description
+parser = argparse.ArgumentParser(
+	description = 'Characterize k-mers from fasta file without headers.'
+)
+
+# Add mandatory arguments
+parser.add_argument('fastaInput', type = str, nargs = 1,
+	help = 'Path to input fasta file.')
+parser.add_argument('output', type = str, nargs = 1,
+	help = 'Path to output tsv file.')
+
+# Add arguments with default value
+parser.add_argument('-o', '--oligoconc', type = int, nargs = 1,
+	metavar = 'oligoConc', help = """
+	Oligo molar concentration. Default: 0.25e-6
+	""", default = [0.25e-6])
+parser.add_argument('-l', '--hplen', type = int, nargs = 1,
+	metavar = 'hplen', help = """
+	Homopolymer stretch length in nt. Default: 4 nt
+	""", default = [4])
+
+# Parse arguments
+args = parser.parse_args()
+
+# Assign to in-script variables
+fain = args.fastaInput[0]
+out = args.output[0]
+oligo_conc = args.oligoconc[0]
+hp_len = args.hplen[0]
 
 # FUNCTIONS ====================================================================
 
@@ -178,6 +203,7 @@ def characterize(seq, oligo_conc, hp_len):
 # RUN ==========================================================================
 
 bar = progressbar.ProgressBar(max_value = file_nrow(fain))
+fout = open(out, 'w+')
 with open(fain, 'r') as fin:
 	i = 0
 	for line in fin:
@@ -185,9 +211,10 @@ with open(fain, 'r') as fin:
 			continue
 		line = line.upper().strip()
 		(fgc, tm, hp) = characterize(line, oligo_conc, hp_len)
-		print("%s\t%f\t%f\t%d" % (line, fgc, tm, hp))
+		fout.write("%s\t%f\t%f\t%d" % (line, fgc, tm, hp))
 		bar.update(i)
 		i += 1
+fout.close()
 fin.close()
 
 # END ==========================================================================

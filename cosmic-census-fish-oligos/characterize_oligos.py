@@ -206,18 +206,21 @@ bar = progressbar.ProgressBar(max_value = file_nrow(fain))
 fout = open(out, 'w+')
 with open(fain, 'r') as fin:
 	i = 0
+	bar.update(i)
+	j = 0
 	for line in fin:
+		i += 1
 		if 0 != line.count('N'):
+			j += 1
 			continue
 		line = line.upper().strip()
 		(fgc, tm, hp) = characterize(line, oligo_conc, hp_len)
 		fout.write("%s\t%f\t%f\t%d\n" % (line, fgc, tm, hp))
 		bar.update(i)
-		i += 1
 fout.close()
 fin.close()
 
-print("Skipped %d sequences containing Ns." % (i,))
+print("Skipped %d (out of %d) sequences containing Ns." % (j, i+j,))
 
 # END ==========================================================================
 

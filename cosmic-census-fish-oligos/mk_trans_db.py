@@ -193,7 +193,7 @@ print("> Retrieving transcript CDS (longest) sequence...")
 
 ltrans_cds = []
 for gene in gene_list:
-	print(" · Working on '%s'..." % (gene,))
+	#print(" · Working on '%s'..." % (gene,))
 	# Retreive CDS data for specific gene
 	cds_data = trans_data[np.where(np.array(trans_data)[:,0] == gene)[0],1:3]
 
@@ -235,7 +235,7 @@ print("> Retrieving transcript CDS+UTRs (longest) sequence...")
 
 ltrans_utr = []
 for gene in gene_list:
-	print(" · Working on '%s'..." % (gene,))
+	#print(" · Working on '%s'..." % (gene,))
 	# Retreive CDS data for specific gene
 	utr_data = trans_data[np.where(np.array(trans_data)[:,0] == gene)[0],:][:,[1, 3]]
 	

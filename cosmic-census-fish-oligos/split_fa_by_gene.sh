@@ -16,6 +16,6 @@ mkdir -p $outdir
 while IFS='' read -r line || [[ -n "$line" ]]; do
 	if [ ${line:0:1} == '>' ]; then
     	name=$(echo "$line" | sed 's/^>\ //' | tr '_' ' ' | cut -d ' ' -f 1)
-    	echo $line | tr ' ' '\n' >> $outdir"/"$name".fa"
+    	echo -e "$line" | tr '\t' '\n' >> $outdir"/"$name".fa"
     fi
 done < <(cat "$1" | paste - -)

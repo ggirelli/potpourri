@@ -90,7 +90,7 @@ with open(fa_in, 'r') as fi:
 
 			# Write oligos
 			for oi in range(len(oligos)):
-				sout = "> %s:O%d\n%s\n" % (curr_id, oi, oligos[oi])
+				sout = "> %s_O%d\n%s\n" % (curr_id, oi, oligos[oi])
 				fo.write(sout)
 		
 		bar.update(i)

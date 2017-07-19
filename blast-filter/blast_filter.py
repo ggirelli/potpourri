@@ -62,7 +62,7 @@ parser.add_argument('-t', '--homology-thr', type = float, nargs = 1,
 	metavar = 'ht', help = """Threshold on maximum homology, as fraction of k.
 	Accepts float values from 0 to 1.
 	Default: .85""", default = [.85])
-parser.add_argument('-e', '--gene-thr', type = int, nargs = 1,
+parser.add_argument('-g', '--gene-thr', type = int, nargs = 1,
 	metavar = 'gt', help = """Threshold on the number of off-targets gene,
 	for a single oligo.
 	Default: 20""", default = [20])

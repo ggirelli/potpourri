@@ -189,6 +189,7 @@ function blast_filter() {
 	faout_path=$2
 	gene_symbol=$3
 	stg_path=$4
+	k=30
 	logpath=$2".log"
 
 	# Keep track
@@ -340,7 +341,7 @@ function blast_filter() {
 			split($1, ff, "_");
 			split(ff[3], oo, ":");
 			oi=substr(oo[1], 2);
-			head=ff[2]"\t"oi"\t"ff[1]"_"ff[2]":("oi + 1"-"oi + k - 1"):"oo[2];
+			head=ff[2]"\t"oi"\t"ff[1]"_"ff[2]":("oi + 1"-"oi + k"):"oo[2];
 			head=head":"oo[3]":"oo[4]"\t"$2;
 			print head;
 		}

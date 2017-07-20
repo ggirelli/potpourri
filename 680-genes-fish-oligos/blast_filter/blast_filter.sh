@@ -174,8 +174,7 @@ echo -e "
 fa_out=$(cat $fain_path | paste - - | sed 's/..//' | sort -k2)
 
 # Count oligos
-n_oligo=$(wc -l "$fain_path" | cut -d ' ' -f 1)
-n_oligo=$(bc <<< "$n_oligo / 2")
+n_oligo=$(cat "$fain_path" | paste - - | wc -l | cut -d ' ' -f 1)
 echo -e " · Found $n_oligo $k-mers..."
 
 # Unique sequences from fasta input
@@ -227,7 +226,11 @@ if [ -n "$torm_seq" ]; then
 	stg_ot=$(echo -e "$stg_ot" | join -v1 -j1 -t$'\t' - <(echo -e "$torm_seq"))
 
 	# Count
-	n_kept_oligo=$(echo -e "$fa_out" | wc -l)
+	if [ -z "$fa_out" ]; then
+		n_kept_oligo=0
+	else
+		n_kept_oligo=$(echo -e "$fa_out" | wc -l)
+	fi
 	n_rm_oligo=$(bc <<< "$n_oligo - $n_kept_oligo")
 	n_oligo=$n_kept_oligo
 	n_rm_seq=$(echo -e "$torm_seq" | wc -l)
@@ -242,68 +245,86 @@ fi
 # OFF-TARGET FILTER #2 ---------------------------------------------------------
 # Saturation filter
 
-# Count hits per off-target transcript
-echo -e " · Identifying saturated off-target transcripts..."
-awkprg='
-{
-	if ( $2 in a ) {
-		a[$2] = a[$2] + 1
-	} else {
-		a[$2] = 1
-	}
-}
+if [ -z "$fa_out" ]; then
+	echo -e " · Skipping saturated off-target transcripts filter..."
+else
 
-END {
-	for ( k in a ) {
-		if ( a[k] >= st ) {
-			print k
+	# Count hits per off-target transcript
+	echo -e " · Identifying saturated off-target transcripts..."
+	awkprg='
+	{
+		if ( $2 in a ) {
+			a[$2] = a[$2] + 1
+		} else {
+			a[$2] = 1
 		}
 	}
-}
-'
-torm_trans=$(echo -e "$stg_ot" | awk -v st=$saturation_level "$awkprg" | sort)
-n_rm_trans=$(echo -e "$torm_trans" | wc -l)
-echo -e " >>> Found $n_rm_trans saturated transcripts."
 
-# Identify sequences hitting on saturated transcripts
-torm_seq=$(echo -e "$stg_ot" | sort -k2 | \
-	join -12 -21 -t$'\t' - <(echo -e "$torm_trans") -o 1.1 | cut -f 1 | sort)
+	END {
+		for ( k in a ) {
+			if ( a[k] >= st ) {
+				print k
+			}
+		}
+	}
+	'
+	torm_trans=$(echo -e "$stg_ot" | \
+		awk -v st=$saturation_level "$awkprg" | sort)
+	n_rm_trans=$(echo -e "$torm_trans" | wc -l)
+	echo -e " >>> Found $n_rm_trans saturated transcripts."
 
-if [ -n "$torm_seq" ]; then
-	echo -e " >>> Removing sequences..."
+	# Identify sequences hitting on saturated transcripts
+	torm_seq=$(echo -e "$stg_ot" | sort -k2 | \
+		join -12 -21 -t$'\t' - <(echo -e "$torm_trans") -o 1.1 | \
+		cut -f 1 | sort)
 
-	# Remove
-	fa_out=$(echo "$fa_out" | join -12 -21 -t $'\t' -v1 \
-		- <(echo -e "$torm_seq") -o 1.1,1.2)
+	if [ -n "$torm_seq" ]; then
+		echo -e " >>> Removing sequences..."
 
-	# Count
-	n_kept_oligo=$(echo -e "$fa_out" | wc -l)
-	n_rm_oligo=$(bc <<< "$n_oligo - $n_kept_oligo")
-	n_rm_seq=$(echo -e "$torm_seq" | wc -l)
+		# Remove
+		fa_out=$(echo "$fa_out" | join -12 -21 -t $'\t' -v1 \
+			- <(echo -e "$torm_seq") -o 1.1,1.2)
 
-	# Log
-	echo -e " >>> Found $n_rm_seq sequences hitting saturated transcripts."
-	echo -e " >>> Removed $n_rm_oligo oligos hitting saturated transcripts."
-else
-	echo -e " >>> Found 0 sequences hitting saturated transcripts."
+		# Count
+		if [ -z "$fa_out"]; then
+			n_kept_oligo=0
+		else
+			n_kept_oligo=$(echo -e "$fa_out" | wc -l)
+		fi
+		n_rm_oligo=$(bc <<< "$n_oligo - $n_kept_oligo")
+		n_rm_seq=$(echo -e "$torm_seq" | wc -l)
+
+		# Log
+		echo -e " >>> Found $n_rm_seq sequences hitting saturated transcripts."
+		echo -e " >>> Removed $n_rm_oligo oligos hitting saturated transcripts."
+	else
+		echo -e " >>> Found 0 sequences hitting saturated transcripts."
+	fi
 fi
 
-# Sort output
-awkprg='
-{
-	split($1, ff, "_");
-	split(ff[3], oo, ":");
-	oi=substr(oo[1], 2);
-	print ff[2]"\t"oi"\t"ff[1]"_"ff[2]":("oi + 1"-"oi + k - 1"):"oo[2]":"oo[3]":"oo[4]"\t"$2;
-}
-'
-fa_out=$(echo -e "$fa_out" | awk -v k=$k "$awkprg" | \
-	sort -k1,1 -k2,2n | cut -f 3,4)
+# OUTPUT =======================================================================
 
-# Write output
-n_out_oligo=$(echo -e "$fa_out" | wc -l)
-echo -e " · Writing output ($n_out_oligo oligos)..."
-echo -e "$fa_out" | sed 's/^/>/' | tr '\t' '\n' > $faout_path
+if [ -n "$fa_out" ]; then
+	# Sort output
+	awkprg='
+	{
+		split($1, ff, "_");
+		split(ff[3], oo, ":");
+		oi=substr(oo[1], 2);
+		print ff[2]"\t"oi"\t"ff[1]"_"ff[2]":("oi + 1"-"oi + k - 1"):"oo[2]":"oo[3]":"oo[4]"\t"$2;
+	}
+	'
+	fa_out=$(echo -e "$fa_out" | awk -v k=$k "$awkprg" | \
+		sort -k1,1 -k2,2n | cut -f 3,4)
+
+	# Write output
+	n_out_oligo=$(echo -e "$fa_out" | wc -l)
+	echo -e " · Writing output ($n_out_oligo oligos)..."
+	echo -e "$fa_out" | sed 's/^/>/' | tr '\t' '\n' > $faout_path
+else
+	echo -e " · No output."
+	touch $faout_path
+fi
 
 # END ==========================================================================
 

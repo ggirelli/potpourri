@@ -286,7 +286,7 @@ else
 			- <(echo -e "$torm_seq") -o 1.1,1.2)
 
 		# Count
-		if [ -z "$fa_out"]; then
+		if [ -z "$fa_out" ]; then
 			n_kept_oligo=0
 		else
 			n_kept_oligo=$(echo -e "$fa_out" | wc -l)

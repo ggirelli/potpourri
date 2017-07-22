@@ -112,7 +112,7 @@ with open(fain_path, 'r') as fain:
 fain.close()
 
 # Run last item
-d = split_fa(curr_head, curr_seq, d)
+d = split_fa(curr_head, curr_seq, d, only_once)
 
 if only_once:
 	# Write final output

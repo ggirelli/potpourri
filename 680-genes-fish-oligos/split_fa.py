@@ -17,6 +17,7 @@
 # DEPENDENCIES =================================================================
 
 import argparse
+import os
 import progressbar
 
 # PARAMETERS ===================================================================
@@ -57,6 +58,10 @@ outdir = args.outdir[0]
 delim = args.d[0]
 field = args.f[0]
 only_once = args.only_once
+
+# Create outdir if it does not exist
+if not os.path.isdir(outdir):
+	os.mkdir(outdir)
 
 # FUNCTIONS ====================================================================
 

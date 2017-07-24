@@ -30,7 +30,7 @@ usage: ./parallel_blast_filter.sh [-h][-k k][-g gt][-s st]
 
  Mandatory arguments:
   -i stg	Table with oligo_sequence|transcript_ID|Gene_Symbol columns.
-  -y gs	Table with gene_ID|Gene_Symbol columns.
+  -y gs	Table with Gene_Symbol|gene_ID columns.
   -f indir	Folder with gene fasta file.
   -o outdir	Output folder.
 
@@ -346,8 +346,9 @@ function blast_filter() {
 			print head;
 		}
 		'
-		fa_out=$(echo -e "$fa_out" | awk -v k=$k "$awkprg" | \
-			sort -k1,1 -k2,2n | cut -f 3,4)
+		# fa_out=$(echo -e "$fa_out" | awk -v k=$k "$awkprg" | \
+		# 	sort -k1,1 -k2,2n | cut -f 3,4)
+		fa_out=$(echo -e "$fa_out" | sort -k1,1 -k2,2n)
 
 		# Write output
 		n_out_oligo=$(echo -e "$fa_out" | wc -l)

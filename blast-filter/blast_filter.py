@@ -5,8 +5,8 @@
 # 
 # Author: Gabriele Girelli
 # Email: gigi.ga90@gmail.com
-# Version: 1.2.0
-# Date: 20170628
+# Version: 1.2.1
+# Date: 20170724
 # Project: RNA FISH oligo design
 # Description:	filter BLASTN output based on:
 # 					- homology (#PM/k),
@@ -25,6 +25,7 @@
 # 		1.0.0: first implementation.
 # 		1.1.0: added argparser support.
 # 		1.2.0: changed saturation OT filter.
+# 		1.2.1: fixed exception triggered when no OT are found.
 # 
 # ------------------------------------------------------------------------------
 
@@ -173,134 +174,138 @@ print(" >>> %d oligos do not have any off-targets." % (len(pass_homology),))
 print(" >>> %d oligos have off-targets." % (len(max_homology)-len(pass_homology),))
 print(" >>> Saving off-target free oligos. Analyzing further the rest.")
 
-# Check off target location
-# -------------------------
-print(" · Identifying off-target locations...")
+if 0 == len(max_homology)-len(pass_homology):
+	print(" · Skipping subsequent filter steps...")
+else:
+	# Check off target location
+	# -------------------------
+	print(" · Identifying off-target locations...")
 
-# Initialize empty off-targets dictionary
-# OligoID:OTgene:OTtranscript
-ot_dict = {}
+	# Initialize empty off-targets dictionary
+	# OligoID:OTgene:OTtranscript
+	ot_dict = {}
 
-# Read table line by line
-with open(blast_output) as bof:
-	for line in bof:
+	# Read table line by line
+	with open(blast_output) as bof:
+		for line in bof:
 
-		# Split every line by column
-		tmp = line.strip().split('\t')
+			# Split every line by column
+			tmp = line.strip().split('\t')
 
-		# Identify oligomer ID
-		OID = tmp[0].split(':')[0]
+			# Identify oligomer ID
+			OID = tmp[0].split(':')[0]
 
-		# Work only on oligos with off-targets
-		# that do not pass the homology filter
-		if OID in pass_homology:
-			continue
+			# Work only on oligos with off-targets
+			# that do not pass the homology filter
+			if OID in pass_homology:
+				continue
 
-		# Identify target gene
-		target = tmp[0].split('_')[0]
+			# Identify target gene
+			target = tmp[0].split('_')[0]
 
-		# Identify transcript ID
-		ot_trans = tmp[1].split('.')[0]
+			# Identify transcript ID
+			ot_trans = tmp[1].split('.')[0]
 
-		# Calculate homology
-		homology = (int(tmp[3]) - int(tmp[4])) / float(k)
+			# Calculate homology
+			homology = (int(tmp[3]) - int(tmp[4])) / float(k)
 
-		# Identify the off-target
-		ot_gene = trn_gene_dict[ot_trans]
+			# Identify the off-target
+			ot_gene = trn_gene_dict[ot_trans]
 
-		# If it is an off-target
-		if target != ot_gene:
+			# If it is an off-target
+			if target != ot_gene:
 
-			# With homology higher than the threshold
-			if homology >= homThr:
+				# With homology higher than the threshold
+				if homology >= homThr:
 
-				if not OID in ot_dict.keys():
-					ot_dict[OID] = {}
-					ot_dict[OID][ot_gene] = {}
-					ot_dict[OID][ot_gene][ot_trans] = 1
-				else:
-					if not ot_gene in ot_dict[OID].keys():
+					if not OID in ot_dict.keys():
+						ot_dict[OID] = {}
 						ot_dict[OID][ot_gene] = {}
 						ot_dict[OID][ot_gene][ot_trans] = 1
 					else:
-						if not ot_trans in ot_dict[OID][ot_gene].keys():
+						if not ot_gene in ot_dict[OID].keys():
+							ot_dict[OID][ot_gene] = {}
 							ot_dict[OID][ot_gene][ot_trans] = 1
 						else:
-							ot_dict[OID][ot_gene][ot_trans] += 1
+							if not ot_trans in ot_dict[OID][ot_gene].keys():
+								ot_dict[OID][ot_gene][ot_trans] = 1
+							else:
+								ot_dict[OID][ot_gene][ot_trans] += 1
 
-# Calculate number of off-targets
-# -------------------------------
-print(" · Filtering based on number of off-target genes...")
+	# Calculate number of off-targets
+	# -------------------------------
+	print(" · Filtering based on number of off-target genes...")
 
-ot_gene_count = {}
-for OID in ot_dict.keys():
-	ot_gene_count[OID] = len(ot_dict[OID].keys())
-print(""" >>> OT counts summary:
-             min : %f
-      1st Quart. : %f
-          median : %f
-            mean : %f
-      2nd Quart. : %f
-             max : %f
- >>> Current threshold at the %d-ith percentile.""" % (
-	np.percentile(ot_gene_count.values(), 0),
-	np.percentile(ot_gene_count.values(), 25),
-	np.percentile(ot_gene_count.values(), 50),
-	np.mean(ot_gene_count.values()),
-	np.percentile(ot_gene_count.values(), 75),
-	np.percentile(ot_gene_count.values(), 100),
-	int(sum(np.array(ot_gene_count.values()) < gene_ot_thr)
-		/ float(len(ot_gene_count.values())) * 100)
-))
+	ot_gene_count = {}
+	for OID in ot_dict.keys():
+		ot_gene_count[OID] = len(ot_dict[OID].keys())
+	print(""" >>> OT counts summary:
+	             min : %f
+	      1st Quart. : %f
+	          median : %f
+	            mean : %f
+	      2nd Quart. : %f
+	             max : %f
+	 >>> Current threshold at the %d-ith percentile.""" % (
+		np.percentile(ot_gene_count.values(), 0),
+		np.percentile(ot_gene_count.values(), 25),
+		np.percentile(ot_gene_count.values(), 50),
+		np.mean(ot_gene_count.values()),
+		np.percentile(ot_gene_count.values(), 75),
+		np.percentile(ot_gene_count.values(), 100),
+		int(sum(np.array(ot_gene_count.values()) < gene_ot_thr)
+			/ float(len(ot_gene_count.values())) * 100)
+	))
 
-# Filter based on number of OTs per oligo
-pass_oligo_ot_count = []
-for OID in ot_gene_count.keys():
-	if ot_gene_count[OID] < gene_ot_thr:
-		pass_oligo_ot_count.append(OID)
-print(" >>> %d oligos pass the OT count filter" % (len(pass_oligo_ot_count),))
+	# Filter based on number of OTs per oligo
+	pass_oligo_ot_count = []
+	for OID in ot_gene_count.keys():
+		if ot_gene_count[OID] < gene_ot_thr:
+			pass_oligo_ot_count.append(OID)
+	print(" >>> %d oligos pass the OT count filter" % (len(pass_oligo_ot_count),))
 
-# Calculate number of common off-targets
-# --------------------------------------
+	# Calculate number of common off-targets
+	# --------------------------------------
 
-pass_gene_ot_count = pass_oligo_ot_count
+	pass_gene_ot_count = pass_oligo_ot_count
 
-if 1 == len(pass_oligo_ot_count):
-	print(" · Skipping saturated off-target transcript filter...")
-else:
-	print(" · Filtering based on saturated off-target transcripts...")
+	if 1 == len(pass_oligo_ot_count):
+		print(" · Skipping saturated off-target transcript filter...")
+	else:
+		print(" · Filtering based on saturated off-target transcripts...")
 
-	gene_ot_count = {}
-	for OID in pass_oligo_ot_count:
-		for gene in ot_dict[OID].keys():
-			if not gene in gene_ot_count.keys():
-				gene_ot_count[gene] = ot_dict[OID][gene]
-			else:
-				for trans in ot_dict[OID][gene].keys():
-					if not trans in gene_ot_count[gene].keys():
-						gene_ot_count[gene][trans] = ot_dict[OID][gene][trans]
-					else:
-						gene_ot_count[gene][trans] += ot_dict[OID][gene][trans]
+		gene_ot_count = {}
+		for OID in pass_oligo_ot_count:
+			for gene in ot_dict[OID].keys():
+				if not gene in gene_ot_count.keys():
+					gene_ot_count[gene] = ot_dict[OID][gene]
+				else:
+					for trans in ot_dict[OID][gene].keys():
+						if not trans in gene_ot_count[gene].keys():
+							gene_ot_count[gene][trans] = ot_dict[OID][gene][trans]
+						else:
+							gene_ot_count[gene][trans] += ot_dict[OID][gene][trans]
 
-	# Filter based on number of OTs per transcript
-	for gene in gene_ot_count.keys():
-		for trans in gene_ot_count[gene].keys():
-			# Discard oligos that off-target a transcript
-			# shared by too many oligos
-			if gene_ot_count[gene][trans] >= oligo_ot_thr:
-				for OID in pass_gene_ot_count:
-					if gene in ot_dict[OID].keys():
-						if trans in ot_dict[OID][gene].keys():
-							pass_gene_ot_count.remove(OID)
+		# Filter based on number of OTs per transcript
+		for gene in gene_ot_count.keys():
+			for trans in gene_ot_count[gene].keys():
+				# Discard oligos that off-target a transcript
+				# shared by too many oligos
+				if gene_ot_count[gene][trans] >= oligo_ot_thr:
+					for OID in pass_gene_ot_count:
+						if gene in ot_dict[OID].keys():
+							if trans in ot_dict[OID][gene].keys():
+								pass_gene_ot_count.remove(OID)
 
-	print(" >>> %d oligos pass the saturation OT filter"
-		% (len(pass_gene_ot_count),))
+		print(" >>> %d oligos pass the saturation OT filter"
+			% (len(pass_gene_ot_count),))
 
 # Merge list of filtered oligos
 # -----------------------------
 
 output_list = pass_homology
-output_list.extend(pass_gene_ot_count)
+if 0 != len(max_homology)-len(output_list):
+	output_list.extend(pass_gene_ot_count)
 output_list.sort()
 
 # Log

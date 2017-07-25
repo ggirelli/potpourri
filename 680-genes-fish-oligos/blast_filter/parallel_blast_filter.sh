@@ -346,9 +346,9 @@ function blast_filter() {
 			print head;
 		}
 		'
-		# fa_out=$(echo -e "$fa_out" | awk -v k=$k "$awkprg" | \
-		# 	sort -k1,1 -k2,2n | cut -f 3,4)
-		fa_out=$(echo -e "$fa_out" | sort -k1,1 -k2,2n)
+		fa_out=$(echo -e "$fa_out" | awk -v k=$k "$awkprg" | \
+			sort -k1,1 -k2,2n | cut -f 3,4)
+		#fa_out=$(echo -e "$fa_out" | sort -k1,1 -k2,2n)
 
 		# Write output
 		n_out_oligo=$(echo -e "$fa_out" | wc -l)

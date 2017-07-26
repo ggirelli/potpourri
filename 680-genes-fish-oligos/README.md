@@ -17,10 +17,14 @@ Generates fasta file with all k-mer from input fasta (database).
 
 Calculates melting temperature, GC-content and homopolymer presence of all sequences in input. Input: a file with one oligo per sequence (e.g., fasta without headers).
 
-## split_fa_by_gene.sh
+## split_fa_by_gene.sh and split_fa.py
 
 Splits a fasta by gene (based on header pattern).
 
 ## blast_filter
 
 Contains scripts for BLASTN output preparation and filtering, in a parallel fashion. The code strictly resembles the `blast_filter.py` script.
+
+## 01_prep.sh
+
+contains the step to be performed before blast_filter can be run.

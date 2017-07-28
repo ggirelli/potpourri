@@ -189,8 +189,10 @@ function blast_filter() {
 	faout_path=$2
 	gene_symbol=$3
 	stg_path=$4
-	k=30
 	logpath=$2".log"
+	gene_ot_thr=$5
+	saturation_level=$6
+	k=$7
 
 	# Keep track
 	awkprg='{ split($NF, ff, "."); print ff[1]; }'
@@ -378,11 +380,14 @@ for f in $(ls "$fin_path"/*.fa); do
 	args+=($gs)
 	# STG path
 	args+=($stg_path)
+	args+=($gene_ot_thr)
+	args+=($saturation_level)
+	args+=($k)
 done
 
 echo -e " · Submitting jobs..."
 echo ${args[@]} | tr ' ' '\t' | \
-	parallel --jobs $threads -d $'\t' -n 4 blast_filter
+	parallel --jobs $threads -d $'\t' -n 7 blast_filter
 
 echo -e " ~ DONE ~"
 # END ==========================================================================

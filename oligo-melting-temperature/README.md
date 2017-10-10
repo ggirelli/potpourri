@@ -7,20 +7,25 @@ The calculation is based on the N-N thermodynamic values presented in Allawi&San
 
 By specifying the `-t` option, it is also possible to use the N-N thermodynamic values presented in Freier et al[5] for RNA.
 
+By using the `-F` option and providing the path to a file with one oligo sequence per line, the melting temperature is automatically calculated for every sequence in the file.
+
 ### Help page
 
 ```
 usage: oligo_tm_calc.py [-h] [-o oligo_conc] [-n na_conc] [-m mg_conc]
-                        [-t {allawi,freier}] [-C] [-v]
+                        [-t {allawi,freier}] [-C] [-F] [-v]
                         seq
 
 Calculate melting temeprature of a DNA duplex at provided [oligo], [Na+],
-[Mg2+]. References: [1] Freier et al, PNAS(83), 1986; [2] Allawi & Santalucia,
-Biochemistry(36), 1997; [3] SantaLucia, PNAS(95), 1998; [4] Owczarzy et al,
-Biochemistry(43), 2004; [5] Owczarzy et al, Biochemistry(47), 2008.
+[Mg2+]. Either provide an oligo sequence or a file with one oligo per line
+(and use -F option). References: [1] Freier et al, PNAS(83), 1986; [2] Allawi
+& Santalucia, Biochemistry(36), 1997; [3] SantaLucia, PNAS(95), 1998; [4]
+Owczarzy et al, Biochemistry(43), 2004; [5] Owczarzy et al, Biochemistry(47),
+2008.
 
 positional arguments:
-  seq                   DNA duplex sequence (one strand only).
+  seq                   DNA duplex sequence (one strand only) or path to file
+                        containing one sequence per line (use with -F).
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -35,7 +40,10 @@ optional arguments:
                         Possible values: allawi (based on ref.2, default) or
                         freier (based on ref.1).
   -C, --celsius         Output temperature in Celsius degrees. Default: Kelvin
+  -F, --usefile         Use when a file path is provided instead of a single
+                        sequence.
   -v, --verbose         Verbose output.
+
 ```
 
 ### References

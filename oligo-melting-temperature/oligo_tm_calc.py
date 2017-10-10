@@ -5,7 +5,7 @@
 # 
 # Author: Gabriele Girelli
 # Email: gigi.ga90@gmail.com
-# Version: 1.0.0
+# Version: 1.1.0
 # Date: 20170711
 # Project: oligo characterization
 # Description:	calculate melting temperature of a provide DNA duplex
@@ -15,6 +15,7 @@
 # 
 # Changelog:
 # 		1.0.0: first implementation.
+# 		1.1.0: input file mode.
 # 
 # References:
 # 	[1] Freier et al, PNAS(83), 1986

@@ -5,24 +5,23 @@
 # 
 # Author: Gabriele Girelli
 # Email: gigi.ga90@gmail.com
-# Version: 1.1.0
-# Date: 20170711
-# Project: oligo characterization
-# Description:	calculate melting temperature of a provide DNA duplex
-# 		
-# @TODO:
-# 	Correction for Mg2+ concentration does not match IDT OligoAnalyzer output.
+# Version: 1.0.0
+# Date: 20171011
+# Project: Oligo analysis
+# Description: calculate possible secondary structure of provided nucleic acid.
 # 
-# Changelog:
-# 		1.0.0: first implementation.
-# 		1.1.0: input file mode.
-# 
-# References:
-# 	[1] Freier et al, PNAS(83), 1986
-# 	[2] Allawi & Santalucia, Biochemistry(36), 1997
-# 	[3] SantaLucia, PNAS(95), 1998
-# 	[4] Owczarzy et al, Biochemistry(43), 2004
-# 	[5] Owczarzy et al, Biochemistry(47), 2008
+# Rationale:
+# 	- Convert provided sequence to numeric (A=0, U|T=1, C=2, G=3).
+# 	- Use sums to identify correct matches.
+# 	- Identify locations (indices) of each differnt base.
+# 	- Save matching base-pairs.
+# 	- Identify matching base-pairs that open-close a stem based on its
+# 	  neighbours.
+# 	- Aggregate matching base-pairs into stems, do not allow for sharp turns.
+# 	- Provide all possible combinations of stems.
+# 	- Calculate Tm and dG for all secondary structure combinations.
+# 	- Produce 'graphical' representation.
+# 	- Output.
 # 
 # ------------------------------------------------------------------------------
 
@@ -31,28 +30,19 @@
 # DEPENDENCIES =================================================================
 
 import argparse
-import math
 
 # PARAMETERS ===================================================================
 
 
 # Add script description
-parser = argparse.ArgumentParser(
-	description = '''
-Calculate melting temeprature of a DNA duplex at provided [oligo],
-[Na+], [Mg2+]. Either provide an oligo sequence or a file with one oligo
-per line (and use -F option). References:
- [1] Freier et al, PNAS(83), 1986;
- [2] Allawi & Santalucia, Biochemistry(36), 1997;
- [3] SantaLucia, PNAS(95), 1998;
- [4] Owczarzy et al, Biochemistry(43), 2004;
- [5] Owczarzy et al, Biochemistry(47), 2008.
+parser = argparse.ArgumentParser(description = '''
+	Calculate melting temperature and delta free energy of possible secondary
+	structure conformation of the provided nucleic acid.
 ''')
 
 # Add mandatory arguments
 parser.add_argument('seq', type = str, nargs = 1,
-	help = '''DNA duplex sequence (one strand only) or path to file containing
-	one sequence per line (use with -F).''')
+	help = '''ssDNA or ssRNA sequence.''')
 
 # Add arguments with default value
 parser.add_argument('-o', '--oconc', metavar = "oligo_conc",
@@ -70,7 +60,12 @@ parser.add_argument('-m', '--mgconc', metavar = "mg_conc",
 	help = '''Mg2+ concentration [M].
 	Default: 0 M''',
 	default = [0])
-parser.add_argument('-t', '--thermo', type = str, nargs = 1,
+parser.add_argument('-t', '--temperature', metavar = "temp",
+	type = float, nargs = 1,
+	help = '''Temperature in Celsius.
+	Default: 37 degC''',
+	default = [37.])
+parser.add_argument('-T', '--thermo', type = str, nargs = 1,
 	help = '''Thermodynamic table to use in the calculations.
 	Possible values: allawi (based on ref.2, default) or 
 	freier (based on ref.1).''',
@@ -81,10 +76,6 @@ parser.add_argument('-C', '--celsius',
 	dest = 'celsius', action = 'store_const',
 	const = True, default = False,
 	help = 'Output temperature in Celsius degrees. Default: Kelvin')
-parser.add_argument('-F', '--usefile',
-	dest = 'usefile', action = 'store_const',
-	const = True, default = False,
-	help = 'Use when a file path is provided instead of a single sequence.')
 parser.add_argument('-v', '--verbose',
 	dest = 'verbose', action = 'store_const',
 	const = True, default = False,
@@ -102,6 +93,7 @@ seq = args.seq[0]
 oligo_conc = args.oconc[0]
 na_conc = args.naconc[0]
 mg_conc = args.mgconc[0]
+temperature = args.temperature[0]
 
 # Thermodynamic table
 tt_mode = args.thermo[0]
@@ -109,11 +101,9 @@ tt_mode = args.thermo[0]
 # Temperature units
 celsius = args.celsius
 
-# File as input
-use_file = args.usefile
-
 # Verbose mode
 is_verbose = args.verbose
+
 
 # Constants --------------------------------------------------------------------
 
@@ -202,6 +192,8 @@ tt = {
 
 def rc(na, t):
 	'''
+	Generates the reverse complement of a nucleic acid string.
+
 	Args:
 		na (string): nucleic acid sequence.
 		t (string): nucleic acid type, either 'dna' or 'rna'.
@@ -245,148 +237,38 @@ def rc(na, t):
 
 	return(rc)
 
-def calc(seq, oligo_conc, na_conc, mg_conc, tt, tt_mode, celsius, is_verbose):
-	# Calculate melting temperature of provided oligo sequence.
-	# 
-	# Args:
-	# 	seq (string): oligonucleotide sequence.
-	# 	oligo_conc (float): oligonucleotide concentration in M.
-	# 	na_conc (float): monovalent species concentration in M.
-	# 	mg_conc (float): divalent species concentration in M.
-	# 	tt (dict): thermodynamic table list.
-	# 	tt_mode (string): thermodynamic table label.
-	# 	celsius (bool): convert K to degC.
-	# 	is_verbose (bool): be verbose.
+def base2num(b):
+	'''
+	Converts nucleic acid base character to a number.
 
-	# Make string uppercase
-	seq = seq.upper()
+	Args:
+		b (string): nucleic acid base character.
 
-	# Make NN couples
-	couples = [seq[i:(i+2)] for i in range(len(seq) - 1)]
+	Returns:
+		int: nucleic acid base number.
+	'''
 
-	# Calculate GC content
-	fgc = (seq.count('G') + seq.count('C')) / float(len(seq))
+def nbase_is_match(b1, b2):
+	'''
+	Checks if two nucleic acid bases in numeric form are complementary.
 
-	# 1 M NaCl case
-	# Based on SantaLucia, PNAS(95), 1998
-	# -----------------------------------
-	na_conc_0 = 1.
+	Args:
+		b1 (string): nucleic acid base in numeric form.
+		b2 (string): nucleic acid base in numeric form.
 
-	# Calculate dH0(N-N)
-	h = sum([tt[tt_mode][c][0] for c in couples])
+	Returns:
+		bool.
+	'''
 
-	# Add initiation enthalpy
-	if tt[tt_mode]['has_end']:
-		h += tt[tt_mode]['end%s' % (seq[0],)][0]
-		h += tt[tt_mode]['end%s' % (seq[-1],)][0]
+def find_loops(seq):
+	'''
+	Identifies all possible loops in a single-strand nucleic acid.
 
-	# Correct enthalpy for symmetry
-	if tt[tt_mode]['has_sym'] and seq == rc(seq, 'dna'):
-		h += tt[tt_mode]['sym'][0]
-
-	# Calculate dS0(N-N) in kcal / (K mol)
-	s = sum([tt[tt_mode][c][1] for c in couples])
-
-	# Add initiation enthalpy
-	if tt[tt_mode]['has_end']:
-		s += tt[tt_mode]['end%s' % (seq[0],)][1]
-		s += tt[tt_mode]['end%s' % (seq[-1],)][1]
-
-	# Correct enthalpy for symmetry
-	if tt[tt_mode]['has_sym'] and seq == rc(seq, 'dna'):
-		s += tt[tt_mode]['sym'][1]
-
-	s /= 1e3
-
-	# Calculate melting temperature in Celsius
-	Tm1 = h / (s + R * math.log(oligo_conc))
-
-	# Adjusted for [Na]
-	# Based on Owczarzy et al, Biochemistry(43), 2004
-	# -----------------------------------------------
-	Tm2 = Tm1
-
-	# Parameters from paper
-	na_a = 4.29e-5
-	na_b = 3.95e-5
-	na_c = 9.4e-6
-
-	# Adjust
-	if not 0  == na_conc:
-		Tm2r = (1. / Tm1)
-		Tm2r += (na_a * fgc - na_b) * math.log(na_conc / na_conc_0)
-		Tm2r += na_c * (math.log(na_conc / na_conc_0) ** 2)
-		Tm2 = 1. / Tm2r
-
-	# Adjusted for Mg
-	# Based on Owczarzy et al, Biochemistry(47), 2008
-	# -----------------------------------------------
-	Tm3 = Tm1
-
-	# Parameters from paper
-	mg_a = 3.92e-5
-	mg_b = -9.11e-6
-	mg_c = 6.26e-5
-	mg_d = 1.42e-5
-	mg_e = -4.82e-4
-	mg_f = 5.25e-4
-	mg_g = 8.31e-5
-
-	# Adjust
-	if not 0  == mg_conc:
-		mg_conc_log = math.log(mg_conc)
-		Tm3r = 1./Tm1 + mg_a + mg_b*mg_conc_log + fgc*(mg_c + mg_d*mg_conc_log)
-		Tm3r_factor = mg_e + mg_f*mg_conc_log + mg_g*(mg_conc_log)**2
-		Tm3r_factor *= (1./(2*(len(seq) - 1)))
-		Tm3r += Tm3r_factor
-		Tm3 = 1./Tm3r
-
-	# Log output
-	# ----------
-
-	if not is_verbose:
-		if celsius:
-			print("%s\t%f" % (seq, Tm3 - 273.15))
-		else:
-			print("%s\t%f" % (seq, Tm3))
-	else:
-		print("""
-		  Oligo sequence : %s
-		      GC-content : %.0f%%
-		         [oligo] : %.9f M
-		           [NA+] : %f M
-		          [Mg2+] : %f M
-		  Thermod. table : %s
-
-		             dH0 : %f kcal/mol 
-		             dS0 : %f kcal/(k·mol)
-		             dG0 : %f kcal/mol
-
-		  [Na+] = 1 M    : Tm = %f K (= %f degC)
-
-		  [Na+] = %f M   : Tm = %f K (= %f degC)
-
-		  [Na+]  = %f M
-		  [Mg2+] = %f M  : Tm = %f K (= %f degC)
-		""" % (
-			seq, fgc * 100, oligo_conc, na_conc, mg_conc, tt_mode,
-			h, s, h - (37 + 273.15) * s,
-			Tm1, Tm1 - 273.15,
-			na_conc, Tm2, Tm2 - 273.15,
-			na_conc, mg_conc, Tm3, Tm3 - 273.15,
-		))
+	Args:
+		seq (string): nucleic acid string
+	'''
 
 # RUN ==========================================================================
-
-if not use_file:
-	# Single sequence case
-	calc(seq, oligo_conc, na_conc, mg_conc, tt, tt_mode, celsius, is_verbose)
-else:
-	# Input file case
-	with open(seq) as fin:
-		for row in fin:
-			calc(row.strip(),
-				oligo_conc, na_conc, mg_conc, tt, tt_mode, celsius, is_verbose)
 
 # END ==========================================================================
 

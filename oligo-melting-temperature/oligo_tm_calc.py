@@ -321,7 +321,7 @@ def calc(seq, oligo_conc, na_conc, mg_conc, tt, tt_mode, celsius, is_verbose):
 	# Adjusted for Mg
 	# Based on Owczarzy et al, Biochemistry(47), 2008
 	# -----------------------------------------------
-	Tm3 = Tm1
+	Tm3 = Tm2
 
 	# Parameters from paper
 	mg_a = 3.92e-5
@@ -366,14 +366,13 @@ def calc(seq, oligo_conc, na_conc, mg_conc, tt, tt_mode, celsius, is_verbose):
 
 		  [Na+] = %f M   : Tm = %f K (= %f degC)
 
-		  [Na+]  = %f M
 		  [Mg2+] = %f M  : Tm = %f K (= %f degC)
 		""" % (
 			seq, fgc * 100, oligo_conc, na_conc, mg_conc, tt_mode,
 			h, s, h - (37 + 273.15) * s,
 			Tm1, Tm1 - 273.15,
 			na_conc, Tm2, Tm2 - 273.15,
-			na_conc, mg_conc, Tm3, Tm3 - 273.15,
+			mg_conc, Tm3, Tm3 - 273.15,
 		))
 
 # RUN ==========================================================================

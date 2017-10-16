@@ -5,7 +5,7 @@
 # 
 # Author: Gabriele Girelli
 # Email: gigi.ga90@gmail.com
-# Version: 1.2.1
+# Version: 1.2.2
 # Date: 20170711
 # Project: oligo characterization
 # Description:	calculate melting temperature of a provide DNA duplex
@@ -15,6 +15,7 @@
 # 		1.1.0: input file mode. Fixed Mg2+ correction.
 # 		1.2.0: DNA/RNA and RNA/DNA duplex calculation.
 # 		1.2.1: fixed sugimotod table.
+# 		1.2.2: fixed allawi and freier tables.
 # 
 # References:
 #  [1] Freier et al, PNAS(83), 1986;
@@ -153,6 +154,7 @@ freier = {
 	'endG'		:	(0,		-10.8,	3.4),
 	'endU'		:	(0,		-10.8,	3.4),
 	'has_end'	:	True,
+	'has_init'	: 	False,
 	'sym'		:	(0,		-1.4,	0.4),
 	'has_sym'	:	True
 }
@@ -180,9 +182,9 @@ sugimotor = {
 	'UC'		:	(-8.6,	-22.9,	-1.5),
 	'UG'		:	(-10.4,	-28.4,	-1.6),
 	'UU'		:	(-11.5,	-36.4,	-0.2),
+	'has_end'	:	False,
 	'init'		:	(1.9,	-3.9,	3.1),
 	'has_init'	:	True,
-	'has_end'	:	False,
 	'has_sym'	:	False
 }
 
@@ -242,6 +244,7 @@ allawi = {
 	'endA'		:	(2.3,	4.1,	1.03),
 	'endT'		:	(2.3,	4.1,	1.03),
 	'has_end'	:	True,
+	'has_init'	:	False,
 	'sym'		:	(2.3,	4.1,	1.03),
 	'has_sym'	:	True
 }

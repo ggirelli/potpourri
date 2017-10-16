@@ -5,24 +5,23 @@
 # 
 # Author: Gabriele Girelli
 # Email: gigi.ga90@gmail.com
-# Version: 1.1.0
+# Version: 1.2.0
 # Date: 20170711
 # Project: oligo characterization
 # Description:	calculate melting temperature of a provide DNA duplex
-# 		
-# @TODO:
-# 	Correction for Mg2+ concentration does not match IDT OligoAnalyzer output.
 # 
 # Changelog:
 # 		1.0.0: first implementation.
-# 		1.1.0: input file mode.
+# 		1.1.0: input file mode. Fixed Mg2+ correction.
+# 		1.2.0: DNA/RNA and RNA/DNA duplex calculation.
 # 
 # References:
-# 	[1] Freier et al, PNAS(83), 1986
-# 	[2] Allawi & Santalucia, Biochemistry(36), 1997
-# 	[3] SantaLucia, PNAS(95), 1998
-# 	[4] Owczarzy et al, Biochemistry(43), 2004
-# 	[5] Owczarzy et al, Biochemistry(47), 2008
+#  [1] Freier et al, PNAS(83), 1986;
+#  [2] Sugimoto et al, Biochemistry(34), 1995.
+#  [3] Allawi & Santalucia, Biochemistry(36), 1997;
+#  [4] SantaLucia, PNAS(95), 1998;
+#  [5] Owczarzy et al, Biochemistry(43), 2004;
+#  [6] Owczarzy et al, Biochemistry(47), 2008;
 # 
 # ------------------------------------------------------------------------------
 

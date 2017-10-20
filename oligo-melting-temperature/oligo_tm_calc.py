@@ -5,17 +5,18 @@
 # 
 # Author: Gabriele Girelli
 # Email: gigi.ga90@gmail.com
-# Version: 1.2.2
+# Version: 1.3.0
 # Date: 20170711
 # Project: oligo characterization
 # Description:	calculate melting temperature of a provide DNA duplex
 # 
 # Changelog:
-# 		1.0.0: first implementation.
-# 		1.1.0: input file mode. Fixed Mg2+ correction.
-# 		1.2.0: DNA/RNA and RNA/DNA duplex calculation.
-# 		1.2.1: fixed sugimotod table.
-# 		1.2.2: fixed allawi and freier tables.
+# 	1.3.0: added temperature curve calculation. Proper fasta input.
+# 	1.2.2: fixed allawi and freier tables.
+# 	1.2.1: fixed sugimotod table.
+# 	1.2.0: DNA/RNA and RNA/DNA duplex calculation.
+# 	1.1.0: input file mode. Fixed Mg2+ correction.
+# 	1.0.0: first implementation.
 # 
 # References:
 #  [1] Freier et al, PNAS(83), 1986;
@@ -33,6 +34,8 @@
 
 import argparse
 import math
+import os
+import sys
 
 # PARAMETERS ===================================================================
 
@@ -79,6 +82,13 @@ parser.add_argument('-t', '--thermo', type = str, nargs = 1,
 	sugimotor (based on ref2., given RNA sequence).''',
 	choices = ['allawi', 'freier', 'sugimotor', 'sugimotod'],
 	default = ['allawi'])
+parser.add_argument('--t-curve', type = float, nargs = 2,
+	metavar = ['range', 'step'],help = '''Temperature range and step for melting
+	curve generation. Use --make-curve option to generate the curve. Default:
+	20 degC range and 0.5 degC step.''', default = [20, 0.5])
+parser.add_argument('--out-curve', type = str, nargs = 1, metavar = "outname",
+	help = '''Path to output table containing tabulated curves.''',
+	default = [False])
 
 # Add flags
 parser.add_argument('-C', '--celsius',
@@ -118,6 +128,27 @@ use_file = args.usefile
 
 # Verbose mode
 is_verbose = args.verbose
+
+# Melting curve
+curve_range = args.t_curve[0]
+curve_step = args.t_curve[1]
+curve_outpath = args.out_curve[0]
+do_curve = False != curve_outpath
+
+# Additional checks ------------------------------------------------------------
+
+# Check proper curve step/range pair
+if curve_step > curve_range / 2:
+	sys.exit("!ERROR! Curve step must be smaller than curve range.")
+curve_range -= curve_range % curve_step
+
+# Remove output curve file if it exists
+if do_curve and os.path.isfile(curve_outpath):
+	os.remove(curve_outpath)
+
+# Print settings ---------------------------------------------------------------
+
+#...
 
 # Constants --------------------------------------------------------------------
 
@@ -159,7 +190,7 @@ freier = {
 	'has_sym'	:	True
 }
 
-# Table from Sugimoto et al, Biochemistry(34), 1995 - in 1 M NaCl [DNA/RNA duplex]
+# Table from Sugimoto et al, Biochemistry(34), 1995 - in 1 M NaCl [DNA/RNA dupl]
 # For calculation from the RNA sequence 5'-to-3'
 # dH0: kcal / mol
 # dS0: cal / (K mol)
@@ -188,7 +219,7 @@ sugimotor = {
 	'has_sym'	:	False
 }
 
-# Table from Sugimoto et al, Biochemistry(34), 1995 - in 1 M NaCl [DNA/RNA duplex]
+# Table from Sugimoto et al, Biochemistry(34), 1995 - in 1 M NaCl [DNA/RNA dupl]
 # For calculation from the DNA sequence 5'-to-3'
 # dH0: kcal / mol
 # dS0: cal / (K mol)
@@ -304,7 +335,128 @@ def rc(na, t):
 
 	return(rc)
 
-def calc(seq, oligo_conc, na_conc, mg_conc, tt, tt_mode, celsius, is_verbose):
+def meltCurve(oligo_conc, na_conc, mg_conc, fgc, h, s, tm, trange, tstep):
+	# Generate melting curve
+	# 
+	# Args:
+	# 	oligo_conc (float): oligonucleotide concentration in M.
+	# 	na_conc (float): monovalent species concentration in M.
+	# 	mg_conc (float): divalent species concentration in M.
+	# 	fgc (float): GC content fraction.
+	# 	h (float): standard enthalpy, in kcal / mol.
+	# 	s (float): standard enthropy, in kcal / (K mol).
+	# 	tm (float): melting temperature.
+	# 	trange (float): melting curve temperature range.
+	# 	tstep (float): melting curve temperature step.
+	# 	
+	# Returns:
+	# 	list: melting curve data (x, y)
+	
+	# Empty list for melting table
+	data = []
+
+	# Explore the temperature range
+	t = tm - trange / 2.
+	while t <= tm + trange / 2.:
+		# Calculate fraction
+		dg = h - t * s
+		factor = oligo_conc * math.exp(-dg / (R * t))
+		k = (factor) / (1 + factor)
+
+		# Adjust output temperature
+		t_out = melt_ion_adj(t, na_conc, mg_conc, fgc)
+
+		# Append melting data
+		data.append((t_out, k))
+		
+		# Go to next temperature
+		t += tstep
+
+	# Return melting table
+	return(data)
+
+def melt_ion_adj(tm, na_conc, mg_conc, fgc):
+	# Adjust melting temperature based on ion concentration
+	# 
+	# Args:
+	# 	tm (float): melting temperature.
+	# 	na_conc (float): monovalent species concentration in M.
+	# 	mg_conc (float): divalent species concentration in M.
+	# 	fgc (float): GC content fraction.
+	# 	
+	# Returns:
+	# 	float: adjusted melting temperature.
+	if 0 != mg_conc:
+		return(melt_mg_adj(tm, mg_conc, fgc))
+	elif 0 != na_conc:
+		return(melt_na_adj(tm, na_conc, fgc))
+
+def melt_na_adj(tm, na_conc, fgc):
+	# Adjust melting temperature based on sodium concentration.
+	# 
+	# Args:
+	# 	tm (float): melting temperature at [Na] = 1 M.
+	# 	na_conc (float): monovalent species concentration in M.
+	# 	fgc (float): GC content fraction.
+	# 	
+	# Returns:
+	# 	float: adjusted melting temperature.
+	
+	# Default
+	na_conc_0 = 1.
+	Tm2 = tm
+
+	# Parameters from paper
+	na_a = 4.29e-5
+	na_b = 3.95e-5
+	na_c = 9.4e-6
+
+	# Adjust
+	if not 0  == na_conc:
+		Tm2r = (1. / tm)
+		Tm2r += (na_a * fgc - na_b) * math.log(na_conc / na_conc_0)
+		Tm2r += na_c * (math.log(na_conc / na_conc_0) ** 2)
+		Tm2 = 1. / Tm2r
+
+	return(Tm2)
+
+def melt_mg_adj(tm, mg_conc, fgc):
+	# Adjust melting temperature based on sodium concentration.
+	# 
+	# Args:
+	# 	tm (float): melting temperature at [Mg] = 0 M.
+	# 	mg_conc (float): divalent species concentration in M.
+	# 	fgc (float): GC content fraction.
+	# 	
+	# Returns:
+	# 	float: adjusted melting temperature.
+	
+	# Default
+	Tm3 = tm
+
+	# Parameters from paper
+	mg_a = 3.92e-5
+	mg_b = -9.11e-6
+	mg_c = 6.26e-5
+	mg_d = 1.42e-5
+	mg_e = -4.82e-4
+	mg_f = 5.25e-4
+	mg_g = 8.31e-5
+
+	# Adjust
+	if not 0  == mg_conc:
+		mg_conc_log = math.log(mg_conc)
+		Tm3r = 1./tm + mg_a + mg_b*mg_conc_log + fgc*(mg_c + mg_d*mg_conc_log)
+		Tm3r_factor = mg_e + mg_f*mg_conc_log + mg_g*(mg_conc_log)**2
+		Tm3r_factor *= (1./(2*(len(seq) - 1)))
+		Tm3r += Tm3r_factor
+		Tm3 = 1./Tm3r
+
+	return(Tm3)
+
+def calc(name, seq, oligo_conc, na_conc, mg_conc,
+	tt, tt_mode, celsius, is_verbose,
+	do_curve, curve_step, curve_range, curve_outpath):
 	# Calculate melting temperature of provided oligo sequence.
 	# 
 	# Args:
@@ -316,6 +468,10 @@ def calc(seq, oligo_conc, na_conc, mg_conc, tt, tt_mode, celsius, is_verbose):
 	# 	tt_mode (string): thermodynamic table label.
 	# 	celsius (bool): convert K to degC.
 	# 	is_verbose (bool): be verbose.
+	# 	do_curve (bool): generate melting curve.
+	# 	curve_step (float): melting curve temperature step.
+	# 	curve_range (float): melting curve temperature range.
+	# 	curve_outpath (string): melting curve output path.
 
 	# Make string uppercase
 	seq = seq.upper()
@@ -385,53 +541,35 @@ def calc(seq, oligo_conc, na_conc, mg_conc, tt, tt_mode, celsius, is_verbose):
 	# Adjusted for [Na]
 	# Based on Owczarzy et al, Biochemistry(43), 2004
 	# -----------------------------------------------
-	Tm2 = Tm1
-
-	# Parameters from paper
-	na_a = 4.29e-5
-	na_b = 3.95e-5
-	na_c = 9.4e-6
-
-	# Adjust
-	if not 0  == na_conc:
-		Tm2r = (1. / Tm1)
-		Tm2r += (na_a * fgc - na_b) * math.log(na_conc / na_conc_0)
-		Tm2r += na_c * (math.log(na_conc / na_conc_0) ** 2)
-		Tm2 = 1. / Tm2r
+	Tm2 = melt_na_adj(Tm1, na_conc, fgc)
 
 	# Adjusted for Mg
 	# Based on Owczarzy et al, Biochemistry(47), 2008
 	# -----------------------------------------------
-	Tm3 = Tm2
+	Tm3 = melt_mg_adj(Tm1, mg_conc, fgc)
 
-	# Parameters from paper
-	mg_a = 3.92e-5
-	mg_b = -9.11e-6
-	mg_c = 6.26e-5
-	mg_d = 1.42e-5
-	mg_e = -4.82e-4
-	mg_f = 5.25e-4
-	mg_g = 8.31e-5
-
-	# Adjust
-	if not 0  == mg_conc:
-		mg_conc_log = math.log(mg_conc)
-		Tm3r = 1./Tm1 + mg_a + mg_b*mg_conc_log + fgc*(mg_c + mg_d*mg_conc_log)
-		Tm3r_factor = mg_e + mg_f*mg_conc_log + mg_g*(mg_conc_log)**2
-		Tm3r_factor *= (1./(2*(len(seq) - 1)))
-		Tm3r += Tm3r_factor
-		Tm3 = 1./Tm3r
+	# Generate melting curves
+	# -----------------------
+	
+	if do_curve:
+		fout = open(curve_outpath, 'a+')
+		tab = meltCurve(oligo_conc, na_conc, mg_conc, fgc,
+			h, s, Tm3, curve_range, curve_step)
+		for (t, k) in tab:
+			fout.write("%s\t%f\t%f\n" % (name, t, k))
+		fout.close()
 
 	# Log output
 	# ----------
 
 	if not is_verbose:
 		if celsius:
-			print("%s\t%f" % (seq, Tm3 - 273.15))
+			print("%s\t%s\t%f" % (name, seq, Tm3 - 273.15))
 		else:
-			print("%s\t%f" % (seq, Tm3))
+			print("%s\t%s\t%f" % (name, seq, Tm3))
 	else:
 		print("""
+			 Oligo label : %s
 		  Oligo sequence : %s
 		      GC-content : %.0f%%
 		         [oligo] : %.9f M
@@ -440,7 +578,7 @@ def calc(seq, oligo_conc, na_conc, mg_conc, tt, tt_mode, celsius, is_verbose):
 		  Thermod. table : %s
 
 		             dH0 : %f kcal/mol 
-		             dS0 : %f kcal/(k·mol)
+		             dS0 : %f kcal/(K·mol)
 		             dG0 : %f kcal/mol
 
 		  [Na+] = 1 M    : Tm = %f K (= %f degC)
@@ -449,7 +587,7 @@ def calc(seq, oligo_conc, na_conc, mg_conc, tt, tt_mode, celsius, is_verbose):
 
 		  [Mg2+] = %f M  : Tm = %f K (= %f degC)
 		""" % (
-			seq, fgc * 100, oligo_conc, na_conc, mg_conc, tt_mode,
+			name, seq, fgc * 100, oligo_conc, na_conc, mg_conc, tt_mode,
 			h, s, h - (37 + 273.15) * s,
 			Tm1, Tm1 - 273.15,
 			na_conc, Tm2, Tm2 - 273.15,
@@ -458,15 +596,49 @@ def calc(seq, oligo_conc, na_conc, mg_conc, tt, tt_mode, celsius, is_verbose):
 
 # RUN ==========================================================================
 
+# Build argument dictionary
+data = {
+	'oligo_conc' : oligo_conc,
+	'na_conc' : na_conc,
+	'mg_conc' : mg_conc,
+	'tt' : tt,
+	'tt_mode' : tt_mode,
+	'celsius' : celsius,
+	'is_verbose' : is_verbose,
+	'do_curve' : do_curve,
+	'curve_step' : curve_step,
+	'curve_range' : curve_range,
+	'curve_outpath' : curve_outpath
+}
+
+# CALCULATE --------------------------------------------------------------------
+
 if not use_file:
 	# Single sequence case
-	calc(seq, oligo_conc, na_conc, mg_conc, tt, tt_mode, celsius, is_verbose)
+	data['name'] = 'seq'
+	data['seq'] = seq
+	calc(**data)
 else:
+	# Empty sequence dictionary
+	fastad = {}
+
 	# Input file case
+	curr_head = ""
 	with open(seq) as fin:
 		for row in fin:
-			calc(row.strip(),
-				oligo_conc, na_conc, mg_conc, tt, tt_mode, celsius, is_verbose)
+			if ">" == row[0]:
+				curr_head = row[1:].strip()
+			else:
+				if curr_head in fastad.keys():
+					fastad[curr_head] = fastad[curr_head] + row.strip()
+				else:
+					fastad[curr_head] = row.strip()
+
+	# Calculate for each fasta item
+	for (name, seq) in fastad.items():
+		data['name'] = name
+		data['seq'] = seq
+		calc(**data)
 
 # END ==========================================================================
 

@@ -5,7 +5,7 @@
 # 
 # Author: Gabriele Girelli
 # Email: gigi.ga90@gmail.com
-# Version: 1.3.0
+# Version: 1.3.1
 # Date: 20170711
 # Project: oligo characterization
 # Description:	calculate melting temperature of a provide DNA duplex
@@ -55,9 +55,9 @@ per line (and use -F option). References:
 ''')
 
 # Add mandatory arguments
-parser.add_argument('seq', type = str, nargs = 1,
-	help = '''DNA duplex sequence (one strand only) or path to file containing
-	one sequence per line (use with -F).''')
+parser.add_argument('seq', type = str, nargs = 1, help = '''
+	DNA duplex sequence (one strand only) or path to a FASTA file (use with -F).
+	''')
 
 # Add arguments with default value
 parser.add_argument('-o', '--oconc', metavar = "oligo_conc",
@@ -145,10 +145,6 @@ curve_range -= curve_range % curve_step
 # Remove output curve file if it exists
 if do_curve and os.path.isfile(curve_outpath):
 	os.remove(curve_outpath)
-
-# Print settings ---------------------------------------------------------------
-
-#...
 
 # Constants --------------------------------------------------------------------
 
@@ -335,62 +331,6 @@ def rc(na, t):
 
 	return(rc)
 
-def meltCurve(oligo_conc, na_conc, mg_conc, fgc, h, s, tm, trange, tstep):
-	# Generate melting curve
-	# 
-	# Args:
-	# 	oligo_conc (float): oligonucleotide concentration in M.
-	# 	na_conc (float): monovalent species concentration in M.
-	# 	mg_conc (float): divalent species concentration in M.
-	# 	fgc (float): GC content fraction.
-	# 	h (float): standard enthalpy, in kcal / mol.
-	# 	s (float): standard enthropy, in kcal / (K mol).
-	# 	tm (float): melting temperature.
-	# 	trange (float): melting curve temperature range.
-	# 	tstep (float): melting curve temperature step.
-	# 	
-	# Returns:
-	# 	list: melting curve data (x, y)
-	
-	# Empty list for melting table
-	data = []
-
-	# Explore the temperature range
-	t = tm - trange / 2.
-	while t <= tm + trange / 2.:
-		# Calculate fraction
-		dg = h - t * s
-		factor = oligo_conc * math.exp(-dg / (R * t))
-		k = (factor) / (1 + factor)
-
-		# Adjust output temperature
-		t_out = melt_ion_adj(t, na_conc, mg_conc, fgc)
-
-		# Append melting data
-		data.append((t_out, k))
-		
-		# Go to next temperature
-		t += tstep
-
-	# Return melting table
-	return(data)
-
-def melt_ion_adj(tm, na_conc, mg_conc, fgc):
-	# Adjust melting temperature based on ion concentration
-	# 
-	# Args:
-	# 	tm (float): melting temperature.
-	# 	na_conc (float): monovalent species concentration in M.
-	# 	mg_conc (float): divalent species concentration in M.
-	# 	fgc (float): GC content fraction.
-	# 	
-	# Returns:
-	# 	float: adjusted melting temperature.
-	if 0 != mg_conc:
-		return(melt_mg_adj(tm, mg_conc, fgc))
-	elif 0 != na_conc:
-		return(melt_na_adj(tm, na_conc, fgc))
-
 def melt_na_adj(tm, na_conc, fgc):
 	# Adjust melting temperature based on sodium concentration.
 	# 
@@ -453,6 +393,62 @@ def melt_mg_adj(tm, mg_conc, fgc):
 		Tm3 = 1./Tm3r
 
 	return(Tm3)
+
+def melt_ion_adj(tm, na_conc, mg_conc, fgc):
+	# Adjust melting temperature based on ion concentration
+	# 
+	# Args:
+	# 	tm (float): melting temperature.
+	# 	na_conc (float): monovalent species concentration in M.
+	# 	mg_conc (float): divalent species concentration in M.
+	# 	fgc (float): GC content fraction.
+	# 	
+	# Returns:
+	# 	float: adjusted melting temperature.
+	if 0 != mg_conc:
+		return(melt_mg_adj(tm, mg_conc, fgc))
+	elif 0 != na_conc:
+		return(melt_na_adj(tm, na_conc, fgc))
+
+def meltCurve(oligo_conc, na_conc, mg_conc, fgc, h, s, tm, trange, tstep):
+	# Generate melting curve
+	# 
+	# Args:
+	# 	oligo_conc (float): oligonucleotide concentration in M.
+	# 	na_conc (float): monovalent species concentration in M.
+	# 	mg_conc (float): divalent species concentration in M.
+	# 	fgc (float): GC content fraction.
+	# 	h (float): standard enthalpy, in kcal / mol.
+	# 	s (float): standard enthropy, in kcal / (K mol).
+	# 	tm (float): melting temperature.
+	# 	trange (float): melting curve temperature range.
+	# 	tstep (float): melting curve temperature step.
+	# 	
+	# Returns:
+	# 	list: melting curve data (x, y)
+	
+	# Empty list for melting table
+	data = []
+
+	# Explore the temperature range
+	t = tm - trange / 2.
+	while t <= tm + trange / 2.:
+		# Calculate fraction
+		dg = h - t * s
+		factor = oligo_conc * math.exp(-dg / (R * t))
+		k = (factor) / (1 + factor)
+
+		# Adjust output temperature
+		t_out = melt_ion_adj(t, na_conc, mg_conc, fgc)
+
+		# Append melting data
+		data.append((t_out, k))
+		
+		# Go to next temperature
+		t += tstep
+
+	# Return melting table
+	return(data)
 
 def calc(name, seq, oligo_conc, na_conc, mg_conc,
 	tt, tt_mode, celsius, is_verbose,
@@ -556,7 +552,10 @@ def calc(name, seq, oligo_conc, na_conc, mg_conc,
 		tab = meltCurve(oligo_conc, na_conc, mg_conc, fgc,
 			h, s, Tm3, curve_range, curve_step)
 		for (t, k) in tab:
-			fout.write("%s\t%f\t%f\n" % (name, t, k))
+			if celsius:
+				fout.write("%s\t%f\t%f\n" % (name, t - 273.15, k))
+			else:
+				fout.write("%s\t%f\t%f\n" % (name, t, k))
 		fout.close()
 
 	# Log output

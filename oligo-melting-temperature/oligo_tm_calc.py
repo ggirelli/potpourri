@@ -5,7 +5,7 @@
 # 
 # Author: Gabriele Girelli
 # Email: gigi.ga90@gmail.com
-# Version: 1.4.0
+# Version: 1.4.1
 # Date: 20170711
 # Project: oligo characterization
 # Description:	calculate melting temperature of a provide DNA duplex
@@ -376,7 +376,10 @@ def melt_fa_adj(tm, h, s, seq, oligo_conc, fa_conc, fa_mode):
 		tm -= 0.72 * fa_conc
 
 	if "wright" == fa_mode:
-		tm = (h + m * fa_conc) / (R * math.log(oligo_conc) + s)
+		if "sugimoto" in tt_mode:
+			tm = (h + m * fa_conc) / (R * math.log(oligo_conc / 4) + s)
+		else:
+			tm = (h + m * fa_conc) / (R * math.log(oligo_conc) + s)
 
 	return(tm)
 
@@ -487,16 +490,45 @@ def meltCurve(seq, oligo_conc, na_conc, mg_conc, fa_conc, fa_mode,
 	# Empty list for melting table
 	data = []
 
+	# Adjust melting temperature
+	if "wright" == fa_mode:
+		tm = melt_fa_adj(tm, h, s, seq, oligo_conc, fa_conc, fa_mode)
+
 	# Explore the temperature range
 	t = tm - trange / 2.
 	while t <= tm + trange / 2.:
-		# Calculate fraction
-		dg = h - t * s + m * fa_conc
-		factor = math.exp(-dg / (R * t)) * oligo_conc
-		k = (factor) / (1 + factor)
+		if "mcconaughy" == fa_mode:
+			# Calculate free energy
+			dg = h - t * s
 
-		# Adjust output temperature
-		t_out = melt_ion_adj(t, na_conc, mg_conc, fgc)
+			# Calculate factor
+			if "sugimoto" in tt_mode:
+				factor = math.exp(-dg / (R * t)) * (oligo_conc / 4)
+			else:
+				factor = math.exp(-dg / (R * t)) * oligo_conc
+
+			# Calculate fraction
+			k = (factor) / (1 + factor)
+
+			# Adjust output temperature
+			t_out = melt_ion_adj(t, na_conc, mg_conc, fgc)
+			t_out = melt_fa_adj(t_out, h, s, seq, oligo_conc, fa_conc, fa_mode)
+
+		if "wright" == fa_mode:
+			# Calculate free energy
+			dg = h - t * s + m * fa_conc
+
+			# Calculate factor
+			if "sugimoto" in tt_mode:
+				factor = math.exp(-dg / (R * t)) * (oligo_conc / 4)
+			else:
+				factor = math.exp(-dg / (R * t)) * oligo_conc
+
+			# Calculate fraction
+			k = (factor) / (1 + factor)
+
+			# Adjust output temperature
+			t_out = melt_ion_adj(t, na_conc, mg_conc, fgc)
 
 		# Append melting data
 		data.append((t_out, k))
@@ -637,7 +669,7 @@ def calc(name, seq, oligo_conc, na_conc, mg_conc, fa_conc, fa_mode,
 	if do_curve:
 		fout = open(curve_outpath, 'a+')
 		tab = meltCurve(seq, oligo_conc, na_conc, mg_conc, fa_conc, fa_mode,
-			fgc, h, s, Tm2, curve_range, curve_step)
+			fgc, h, s, Tm1, curve_range, curve_step)
 		for (t, k) in tab:
 			if celsius:
 				fout.write("%s\t%f\t%f\n" % (name, t - 273.15, k))

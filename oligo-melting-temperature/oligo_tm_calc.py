@@ -5,12 +5,13 @@
 # 
 # Author: Gabriele Girelli
 # Email: gigi.ga90@gmail.com
-# Version: 1.3.1
+# Version: 1.4.0
 # Date: 20170711
 # Project: oligo characterization
 # Description:	calculate melting temperature of a provide DNA duplex
 # 
 # Changelog:
+#   1.4.0: added formamide correction.
 # 	1.3.0: added temperature curve calculation. Proper fasta input.
 # 	1.2.2: fixed allawi and freier tables.
 # 	1.2.1: fixed sugimotod table.
@@ -25,6 +26,8 @@
 #  [4] SantaLucia, PNAS(95), 1998;
 #  [5] Owczarzy et al, Biochemistry(43), 2004;
 #  [6] Owczarzy et al, Biochemistry(47), 2008;
+#  [7] McConaughy et al, Biochemistry(8), 1969;
+#  [8] Wright et al, Appl. env. microbiol.(80), 2014.
 # 
 # ------------------------------------------------------------------------------
 
@@ -52,6 +55,8 @@ per line (and use -F option). References:
  [4] SantaLucia, PNAS(95), 1998;
  [5] Owczarzy et al, Biochemistry(43), 2004;
  [6] Owczarzy et al, Biochemistry(47), 2008;
+ [7] McConaughy et al, Biochemistry(8), 1969;
+ [8] Wright et al, Appl. env. microbiol.(80), 2014.
 ''')
 
 # Add mandatory arguments
@@ -72,23 +77,31 @@ parser.add_argument('-n', '--naconc', metavar = "na_conc",
 	default = [50e-3])
 parser.add_argument('-m', '--mgconc', metavar = "mg_conc",
 	type = float, nargs = 1,
-	help = '''Mg2+ concentration [M].
-	Default: 0 M''',
+	help = '''Mg2+ concentration [M]. Note: Mg2+ correction overwrites Na+
+	correction. Default: 0 M''',
 	default = [0])
 parser.add_argument('-t', '--thermo', type = str, nargs = 1,
 	help = '''Thermodynamic table to use in the calculations.
 	Possible values: allawi (based on ref.3, default), freier (based on ref.1),
 	sugimotod (based on ref.2., given DNA sequence) or
-	sugimotor (based on ref2., given RNA sequence).''',
+	sugimotor (based on ref.2, given RNA sequence).''',
 	choices = ['allawi', 'freier', 'sugimotor', 'sugimotod'],
 	default = ['allawi'])
 parser.add_argument('--t-curve', type = float, nargs = 2,
-	metavar = ['range', 'step'],help = '''Temperature range and step for melting
-	curve generation. Use --make-curve option to generate the curve. Default:
-	20 degC range and 0.5 degC step.''', default = [20, 0.5])
+	metavar = ('range', 'step'), help = '''Temperature range and step for
+	melting curve generation. Use --make-curve option to generate the curve.
+	Default: 20 degC range and 0.5 degC step.''', default = [20, 0.5])
 parser.add_argument('--out-curve', type = str, nargs = 1, metavar = "outname",
 	help = '''Path to output table containing tabulated curves.''',
 	default = [False])
+parser.add_argument('-f', '--faconc', type = float, nargs = 1,
+	metavar = 'fa_conc', help = '''Formamide concentration in %%(v,v).''',
+	default = [0])
+parser.add_argument('--fa-mode', type = str, nargs = 1,
+	metavar = 'fa_mode', help = '''Mode of formamide correction. "mcconaughy"
+	for classical -0.72%%FA correction from ref. 7, "wright" for single reaction
+	model correction from ref.8 (default).''',
+	choices = ['mcconaughy', 'wright'], default = ['wright'])
 
 # Add flags
 parser.add_argument('-C', '--celsius',
@@ -135,6 +148,10 @@ curve_step = args.t_curve[1]
 curve_outpath = args.out_curve[0]
 do_curve = False != curve_outpath
 
+# Formamide
+fa_conc = args.faconc[0]
+fa_mode = args.fa_mode[0]
+
 # Additional checks ------------------------------------------------------------
 
 # Check proper curve step/range pair
@@ -147,6 +164,10 @@ if do_curve and os.path.isfile(curve_outpath):
 	os.remove(curve_outpath)
 
 # Constants --------------------------------------------------------------------
+
+# Formamide m-value
+#m = 0.0032 * len(seq) + 0.0116
+m = 0.1734
 
 # Gas constant
 R = 1.987 / 1000	# kcal / (K mol)
@@ -331,8 +352,37 @@ def rc(na, t):
 
 	return(rc)
 
+def melt_fa_adj(tm, h, s, seq, oligo_conc, fa_conc, fa_mode):
+	# Adjust melting temperature based on formamide concentration.
+	# Based on Wright, Appl. env. microbiol.(80), 2014
+	# Or on McConaughy, Biochemistry(8), 1969
+	# 
+	# Args:
+	# 	tm (float): melting temperature.
+	# 	h (float): standard enthalpy, in kcal / mol.
+	# 	s (float): standard enthropy, in kcal / (K mol).
+	# 	seq (string): oligonucleotide sequence.
+	# 	oligo_conc (float): oligonucleotide concentration in M.
+	# 	fa_conc (float): formamide concentration in %v,v.
+	# 	fa_mode (string): formamide correction lavel.
+	# 
+	# Returns:
+	#   float: corrected melting temperature.
+	
+	if 0 == fa_conc:
+		return(tm)
+	
+	if "mcconaughy" == fa_mode:
+		tm -= 0.72 * fa_conc
+
+	if "wright" == fa_mode:
+		tm = (h + m * fa_conc) / (R * math.log(oligo_conc) + s)
+
+	return(tm)
+
 def melt_na_adj(tm, na_conc, fgc):
 	# Adjust melting temperature based on sodium concentration.
+	# Based on Owczarzy et al, Biochemistry(43), 2004
 	# 
 	# Args:
 	# 	tm (float): melting temperature at [Na] = 1 M.
@@ -352,7 +402,7 @@ def melt_na_adj(tm, na_conc, fgc):
 	na_c = 9.4e-6
 
 	# Adjust
-	if not 0  == na_conc:
+	if 0 < na_conc:
 		Tm2r = (1. / tm)
 		Tm2r += (na_a * fgc - na_b) * math.log(na_conc / na_conc_0)
 		Tm2r += na_c * (math.log(na_conc / na_conc_0) ** 2)
@@ -362,6 +412,7 @@ def melt_na_adj(tm, na_conc, fgc):
 
 def melt_mg_adj(tm, mg_conc, fgc):
 	# Adjust melting temperature based on sodium concentration.
+	# Based on Owczarzy et al, Biochemistry(47), 2008
 	# 
 	# Args:
 	# 	tm (float): melting temperature at [Mg] = 0 M.
@@ -384,7 +435,7 @@ def melt_mg_adj(tm, mg_conc, fgc):
 	mg_g = 8.31e-5
 
 	# Adjust
-	if not 0  == mg_conc:
+	if 0 < mg_conc:
 		mg_conc_log = math.log(mg_conc)
 		Tm3r = 1./tm + mg_a + mg_b*mg_conc_log + fgc*(mg_c + mg_d*mg_conc_log)
 		Tm3r_factor = mg_e + mg_f*mg_conc_log + mg_g*(mg_conc_log)**2
@@ -409,14 +460,20 @@ def melt_ion_adj(tm, na_conc, mg_conc, fgc):
 		return(melt_mg_adj(tm, mg_conc, fgc))
 	elif 0 != na_conc:
 		return(melt_na_adj(tm, na_conc, fgc))
+	else:
+		return(tm)
 
-def meltCurve(oligo_conc, na_conc, mg_conc, fgc, h, s, tm, trange, tstep):
+def meltCurve(seq, oligo_conc, na_conc, mg_conc, fa_conc, fa_mode,
+	fgc, h, s, tm, trange, tstep):
 	# Generate melting curve
 	# 
 	# Args:
+	# 	seq (string): oligonucleotide sequence.
 	# 	oligo_conc (float): oligonucleotide concentration in M.
 	# 	na_conc (float): monovalent species concentration in M.
 	# 	mg_conc (float): divalent species concentration in M.
+	# 	fa_conc (float): formamide concentration in %v,v.
+	# 	fa_mode (string): formamide correction lavel.
 	# 	fgc (float): GC content fraction.
 	# 	h (float): standard enthalpy, in kcal / mol.
 	# 	s (float): standard enthropy, in kcal / (K mol).
@@ -434,8 +491,8 @@ def meltCurve(oligo_conc, na_conc, mg_conc, fgc, h, s, tm, trange, tstep):
 	t = tm - trange / 2.
 	while t <= tm + trange / 2.:
 		# Calculate fraction
-		dg = h - t * s
-		factor = oligo_conc * math.exp(-dg / (R * t))
+		dg = h - t * s + m * fa_conc
+		factor = math.exp(-dg / (R * t)) * oligo_conc
 		k = (factor) / (1 + factor)
 
 		# Adjust output temperature
@@ -450,7 +507,62 @@ def meltCurve(oligo_conc, na_conc, mg_conc, fgc, h, s, tm, trange, tstep):
 	# Return melting table
 	return(data)
 
-def calc(name, seq, oligo_conc, na_conc, mg_conc,
+def melt_std_calc(seq, tt, tt_mode, couples, oligo_conc):
+	# Calculate melting temperature at standard 1 M NaCl (monovalent ions conc)
+	# Based on SantaLucia, PNAS(95), 1998
+	# 
+	# Args:
+	# 	seq (string): oligonucleotide sequence.
+	# 	tt (dict): thermodynamic table list.
+	# 	tt_mode (string): thermodynamic table label.
+	# 	couples (list): list of base dimers.
+	# 	oligo_conc (float): oligonucleotide concentration in M.
+	# 
+	# Returns:
+	# 	tuple: hybridization enthalpy, enthropy and melting temperature.
+	
+	# Standard 1 M NaCl
+	na_conc_0 = 1.
+
+	# Calculate dH0(N-N)
+	h = sum([tt[tt_mode][c][0] for c in couples])
+
+	# Add initiation enthalpy
+	if tt[tt_mode]['has_end']:
+		h += tt[tt_mode]['end%s' % (seq[0],)][0]
+		h += tt[tt_mode]['end%s' % (seq[-1],)][0]
+	if tt[tt_mode]['has_init']:
+		h += tt[tt_mode]['init'][0]
+
+	# Correct enthalpy for symmetry
+	if tt[tt_mode]['has_sym'] and seq == rc(seq, 'dna'):
+		h += tt[tt_mode]['sym'][0]
+
+	# Calculate dS0(N-N) in kcal / (K mol)
+	s = sum([tt[tt_mode][c][1] for c in couples])
+
+	# Add initiation enthropy
+	if tt[tt_mode]['has_end']:
+		s += tt[tt_mode]['end%s' % (seq[0],)][1]
+		s += tt[tt_mode]['end%s' % (seq[-1],)][1]
+	if tt[tt_mode]['has_init']:
+		s += tt[tt_mode]['init'][1]
+
+	# Correct enthalpy for symmetry
+	if tt[tt_mode]['has_sym'] and seq == rc(seq, 'dna'):
+		s += tt[tt_mode]['sym'][1]
+	s /= 1e3
+
+	# Calculate melting temperature in Celsius
+	if 'sugimoto' in tt_mode:
+		tm = h / (s + R * math.log(oligo_conc / 4))
+	else:
+		tm = h / (s + R * math.log(oligo_conc))
+
+	# Output
+	return((h, s, tm))
+
+def calc(name, seq, oligo_conc, na_conc, mg_conc, fa_conc, fa_mode,
 	tt, tt_mode, celsius, is_verbose,
 	do_curve, curve_step, curve_range, curve_outpath):
 	# Calculate melting temperature of provided oligo sequence.
@@ -460,6 +572,8 @@ def calc(name, seq, oligo_conc, na_conc, mg_conc,
 	# 	oligo_conc (float): oligonucleotide concentration in M.
 	# 	na_conc (float): monovalent species concentration in M.
 	# 	mg_conc (float): divalent species concentration in M.
+	# 	fa_conc (float): formamide concentration in %v,v.
+	# 	fa_mode (string): formamide correction lavel.
 	# 	tt (dict): thermodynamic table list.
 	# 	tt_mode (string): thermodynamic table label.
 	# 	celsius (bool): convert K to degC.
@@ -496,61 +610,34 @@ def calc(name, seq, oligo_conc, na_conc, mg_conc,
 	# 1 M NaCl case
 	# Based on SantaLucia, PNAS(95), 1998
 	# -----------------------------------
-	na_conc_0 = 1.
+	(h, s, Tm1) = melt_std_calc(seq, tt, tt_mode, couples, oligo_conc)
 
-	# Calculate dH0(N-N)
-	h = sum([tt[tt_mode][c][0] for c in couples])
-
-	# Add initiation enthalpy
-	if tt[tt_mode]['has_end']:
-		h += tt[tt_mode]['end%s' % (seq[0],)][0]
-		h += tt[tt_mode]['end%s' % (seq[-1],)][0]
-	if tt[tt_mode]['has_init']:
-		h += tt[tt_mode]['init'][0]
-
-	# Correct enthalpy for symmetry
-	if tt[tt_mode]['has_sym'] and seq == rc(seq, 'dna'):
-		h += tt[tt_mode]['sym'][0]
-
-	# Calculate dS0(N-N) in kcal / (K mol)
-	s = sum([tt[tt_mode][c][1] for c in couples])
-
-	# Add initiation enthropy
-	if tt[tt_mode]['has_end']:
-		s += tt[tt_mode]['end%s' % (seq[0],)][1]
-		s += tt[tt_mode]['end%s' % (seq[-1],)][1]
-	if tt[tt_mode]['has_init']:
-		s += tt[tt_mode]['init'][1]
-
-	# Correct enthalpy for symmetry
-	if tt[tt_mode]['has_sym'] and seq == rc(seq, 'dna'):
-		s += tt[tt_mode]['sym'][1]
-
-	s /= 1e3
-
-	# Calculate melting temperature in Celsius
-	if 'sugimoto' in tt_mode:
-		Tm1 = h / (s + R * math.log(oligo_conc / 4))
-	else:
-		Tm1 = h / (s + R * math.log(oligo_conc))
+	# Adjust for FA
+	# Based on Wright, Appl. env. microbiol.(80), 2014
+	# Or on McConaughy, Biochemistry(8), 1969
+	# ------------------------------------------------
+	Tm2 = melt_fa_adj(Tm1, h, s, seq, oligo_conc, fa_conc, fa_mode)
 
 	# Adjusted for [Na]
 	# Based on Owczarzy et al, Biochemistry(43), 2004
 	# -----------------------------------------------
-	Tm2 = melt_na_adj(Tm1, na_conc, fgc)
+	Tm3 = melt_na_adj(Tm2, na_conc, fgc)
 
 	# Adjusted for Mg
 	# Based on Owczarzy et al, Biochemistry(47), 2008
 	# -----------------------------------------------
-	Tm3 = melt_mg_adj(Tm1, mg_conc, fgc)
+	if 0 < mg_conc:
+		Tm4 = melt_mg_adj(Tm2, mg_conc, fgc)
+	else:
+		Tm4 = Tm3
 
 	# Generate melting curves
 	# -----------------------
 	
 	if do_curve:
 		fout = open(curve_outpath, 'a+')
-		tab = meltCurve(oligo_conc, na_conc, mg_conc, fgc,
-			h, s, Tm3, curve_range, curve_step)
+		tab = meltCurve(seq, oligo_conc, na_conc, mg_conc, fa_conc, fa_mode,
+			fgc, h, s, Tm2, curve_range, curve_step)
 		for (t, k) in tab:
 			if celsius:
 				fout.write("%s\t%f\t%f\n" % (name, t - 273.15, k))
@@ -560,21 +647,28 @@ def calc(name, seq, oligo_conc, na_conc, mg_conc,
 
 	# Log output
 	# ----------
-
+	
 	if not is_verbose:
 		if celsius:
-			print("%s\t%s\t%f" % (name, seq, Tm3 - 273.15))
+			print("%s\t%s\t%f" % (name, seq, Tm4 - 273.15))
 		else:
-			print("%s\t%s\t%f" % (name, seq, Tm3))
+			print("%s\t%s\t%f" % (name, seq, Tm4))
 	else:
 		print("""
 			 Oligo label : %s
 		  Oligo sequence : %s
 		      GC-content : %.0f%%
 		         [oligo] : %.9f M
-		           [NA+] : %f M
+		           [Na+] : %f M
 		          [Mg2+] : %f M
+		            [FA] : %.1f%%
+		   FA correction : %s
 		  Thermod. table : %s
+
+		     Melt. curve : %s
+		     Curve range : %f
+		      Curve step : %f
+		          Output : %s
 
 		             dH0 : %f kcal/mol 
 		             dS0 : %f kcal/(K·mol)
@@ -582,15 +676,22 @@ def calc(name, seq, oligo_conc, na_conc, mg_conc,
 
 		  [Na+] = 1 M    : Tm = %f K (= %f degC)
 
-		  [Na+] = %f M   : Tm = %f K (= %f degC)
+	      [FA] = %.1f %%(v,v) : Tm = %f K (= %f degC)
 
-		  [Mg2+] = %f M  : Tm = %f K (= %f degC)
+	    [Na+] = %.6f M   : Tm = %f K (= %f degC)
+
+	    [Mg2+] = %.6f M  : Tm = %f K (= %f degC)
+            Note: Mg2+ correction overwrites Na+ correction.
 		""" % (
-			name, seq, fgc * 100, oligo_conc, na_conc, mg_conc, tt_mode,
+			name, seq, fgc * 100,
+			oligo_conc, na_conc, mg_conc,
+			fa_conc, fa_mode, tt_mode,
+			do_curve, curve_range, curve_step, curve_outpath,
 			h, s, h - (37 + 273.15) * s,
 			Tm1, Tm1 - 273.15,
-			na_conc, Tm2, Tm2 - 273.15,
-			mg_conc, Tm3, Tm3 - 273.15,
+			fa_conc, Tm2, Tm2 - 273.15,
+			na_conc, Tm3, Tm3 - 273.15,
+			mg_conc, Tm4, Tm4 - 273.15,
 		))
 
 # RUN ==========================================================================
@@ -600,6 +701,8 @@ data = {
 	'oligo_conc' : oligo_conc,
 	'na_conc' : na_conc,
 	'mg_conc' : mg_conc,
+	'fa_conc' : fa_conc,
+	'fa_mode' : fa_mode,
 	'tt' : tt,
 	'tt_mode' : tt_mode,
 	'celsius' : celsius,

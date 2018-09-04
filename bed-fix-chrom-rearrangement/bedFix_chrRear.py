@@ -80,7 +80,7 @@ pos1, pos2 = [int(x) for x in [pos1, pos2]]
 
 for bedfile in tqdm(args.bedfile):
 	bed_check = open(bedfile, "r")
-	headline = bed_check.readlines()[0]
+	headline = bed_check.readlines()[0].strip()
 	if headline.startswith("track "):
 		bed = pd.read_csv(bedfile, "\t", header = None, skiprows = 1)
 	else:
